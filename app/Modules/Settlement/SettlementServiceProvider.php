@@ -9,8 +9,8 @@ use App\Modules\Settlement\Contracts\LotMovementPort;
 use App\Modules\Settlement\Contracts\SettlementReaderInterface;
 use App\Modules\Settlement\Contracts\TradeReaderInterface;
 use App\Modules\Settlement\Domain\NettingCalculator;
+use App\Modules\Settlement\Infrastructure\CustodyLotMovementAdapter;
 use App\Modules\Settlement\Infrastructure\EloquentSettlementReader;
-use App\Modules\Settlement\Infrastructure\Null\NullLotMovementPort;
 use App\Modules\Settlement\Infrastructure\Null\NullTradeReader;
 use App\Modules\Settlement\Listeners\OpenSettlementOnTradeExecuted;
 use App\Modules\Shared\Concerns\ModuleServiceProvider;
@@ -72,8 +72,11 @@ final class SettlementServiceProvider extends ModuleServiceProvider
         // The netting maths is stateless and pure, so one instance is plenty.
         $this->app->singleton(NettingCalculator::class);
 
-        // Custody publishes no write contract, so the default is the no-op port
-        // and the real adapter is named in configuration. See LotMovementPort.
+        // Custody publishes LotDeliveryInterface, so the default is the real
+        // adapter over it: a settled settlement moves the gold_lots rows, not
+        // just the ledger. NullLotMovementPort stays available for a deployment
+        // that runs Settlement without Custody — name it in
+        // config('goldb2b.settlement.lot_movement_port').
         $this->app->bind(LotMovementPort::class, function (): LotMovementPort {
             /** @var ?string $configured */
             $configured = config('goldb2b.settlement.lot_movement_port');
@@ -85,7 +88,7 @@ final class SettlementServiceProvider extends ModuleServiceProvider
                 return $port;
             }
 
-            return $this->app->make(NullLotMovementPort::class);
+            return $this->app->make(CustodyLotMovementAdapter::class);
         });
     }
 }

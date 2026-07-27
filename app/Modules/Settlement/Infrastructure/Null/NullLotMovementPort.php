@@ -9,15 +9,14 @@ use App\Modules\Settlement\Contracts\LotMovementPort;
 use App\Modules\Settlement\Contracts\LotMovementResult;
 
 /**
- * Default binding for LotMovementPort: reports the plan's lots as delivered
- * without touching them.
+ * Opt-out LotMovementPort: reports the plan's lots as delivered without
+ * touching them.
  *
- * Custody exposes no write contract (see LotMovementPort's docblock), so
- * Settlement cannot legally reach its LotOwnershipService. Rather than fail
- * every settlement, the ledger still moves the gold — that is where balances
- * and conservation of mass live — and lot ownership simply does not follow
- * until a real adapter is configured through
- * config('goldb2b.settlement.lot_movement_port').
+ * No longer the default — CustodyLotMovementAdapter is — but still selectable
+ * through config('goldb2b.settlement.lot_movement_port') for a deployment that
+ * runs Settlement without the Custody module. Rather than fail every
+ * settlement, the ledger still moves the gold — that is where balances and
+ * conservation of mass live — and lot ownership simply does not follow.
  *
  * isOperational() returns false so a caller, an operator dashboard or a health
  * check can tell the difference between "nothing to move" and "nothing wired

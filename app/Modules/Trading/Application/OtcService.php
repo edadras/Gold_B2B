@@ -6,6 +6,9 @@ namespace App\Modules\Trading\Application;
 
 use App\Modules\Ledger\Domain\LedgerEntryId;
 use App\Modules\Ledger\Domain\LedgerReference;
+use App\Modules\Pricing\Contracts\QuoteWriterInterface;
+use App\Modules\Pricing\Contracts\TradePrint;
+use App\Modules\Pricing\Contracts\TradeSource as PricingTradeSource;
 use App\Modules\Risk\Contracts\RiskGuardInterface;
 use App\Modules\Risk\Contracts\TradeIntent;
 use App\Modules\Risk\Contracts\TradeSide;
@@ -53,6 +56,7 @@ final readonly class OtcService
         private ObligationReserver $reserver,
         private TradeWriter $tradeWriter,
         private RiskGuardInterface $risk,
+        private QuoteWriterInterface $quotes,
     ) {}
 
     /** Step 1 and 2: send the offer and lock the initiator's side. */
@@ -253,6 +257,8 @@ final readonly class OtcService
 
         event(TradeEventFactory::executed($trade));
 
+        $this->publishPrint($trade);
+
         return $trade;
     }
 
@@ -379,6 +385,26 @@ final readonly class OtcService
         ));
 
         return $offer;
+    }
+
+
+    /**
+     * Fold the print into Pricing's day statistics, after commit.
+     *
+     * An OTC or RFQ print never moves the last price — Pricing enforces that
+     * through TradeSource::movesLastPrice() — but it does count towards volume
+     * and VWAP (§7.6), so it is handed over like any other.
+     */
+    private function publishPrint(Trade $trade): void
+    {
+        $this->quotes->recordTrade(new TradePrint(
+            instrumentId: $trade->instrument_id,
+            pricePerFineGramRial: $trade->price_per_gram_rial,
+            fineWeightMg: $trade->quantity_fine_mg,
+            executedAt: $trade->executed_at,
+            source: PricingTradeSource::from($trade->trade_source->value),
+            tradeId: $trade->id,
+        ));
     }
 
     private function lockNegotiable(int $offerId, int $actorOrganizationId): OtcOffer

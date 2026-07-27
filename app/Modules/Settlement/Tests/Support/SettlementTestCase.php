@@ -35,9 +35,10 @@ use Tests\TestCase;
  * configuration in register(), which needs the config repository — and before
  * RefreshDatabase migrates, so every module's migrations are in place.
  *
- * LotMovementPort is bound to the real Custody-backed adapter here, so the
- * worked-example tests exercise genuine lot ownership transfers rather than the
- * no-op production default.
+ * LotMovementPort is deliberately left alone: SettlementServiceProvider binds
+ * the real Custody-backed adapter by default, so the worked-example tests
+ * exercise the production path — genuine splits and genuine ownership
+ * transfers — rather than a fixture that only exists under Tests/.
  */
 abstract class SettlementTestCase extends TestCase
 {
@@ -56,9 +57,15 @@ abstract class SettlementTestCase extends TestCase
         $this->app->register(CustodyServiceProvider::class);
         $this->app->register(RiskServiceProvider::class);
         $this->app->register(SettlementServiceProvider::class);
+    }
 
-        // The genuine Custody-backed port, in place of the production no-op.
-        $this->app->bind(LotMovementPort::class, CustodyLotMovementAdapter::class);
+    /**
+     * The port the suite runs against — the production binding, resolved
+     * exactly as GoldTransferService and ReversalService resolve it.
+     */
+    protected function lotMovementPort(): LotMovementPort
+    {
+        return $this->app->make(LotMovementPort::class);
     }
 
     // ── ledger scaffolding ───────────────────────────────────────────────────

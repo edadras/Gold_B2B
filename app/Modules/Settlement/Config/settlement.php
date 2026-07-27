@@ -44,13 +44,17 @@ return [
     'penalty_beneficiary' => 'COUNTERPARTY',
 
     /*
-     * Implementation of App\Modules\Settlement\Contracts\LotMovementPort.
+     * Override for App\Modules\Settlement\Contracts\LotMovementPort.
      *
-     * Custody exposes no write contract, so Settlement cannot legally reach its
-     * LotOwnershipService (AGENT_BRIEF rule 7). NullLotMovementPort is the
-     * default: the ledger still moves the gold, but lot ownership does not
-     * follow. Point this at a real adapter — or have Custody publish a write
-     * contract — to complete the picture.
+     * Left unset — the normal case — Settlement binds
+     * Infrastructure\CustodyLotMovementAdapter, which delegates to Custody's
+     * published write contract (Custody\Contracts\LotDeliveryInterface) so a
+     * settled settlement moves the gold_lots rows as well as the ledger.
+     *
+     * Name a class here to swap it: Infrastructure\Null\NullLotMovementPort for
+     * a deployment that runs Settlement without Custody — the ledger still
+     * moves the gold, lot ownership simply does not follow, and
+     * isOperational() reports false so a health check can tell.
      */
     'lot_movement_port' => env('SETTLEMENT_LOT_MOVEMENT_PORT'),
 ];

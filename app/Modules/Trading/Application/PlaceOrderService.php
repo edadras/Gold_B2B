@@ -8,6 +8,9 @@ use App\Modules\Ledger\Contracts\GoldLedgerInterface;
 use App\Modules\Ledger\Contracts\RialLedgerInterface;
 use App\Modules\Ledger\Domain\LedgerReference;
 use App\Modules\Pricing\Contracts\PriceReaderInterface;
+use App\Modules\Pricing\Contracts\QuoteWriterInterface;
+use App\Modules\Pricing\Contracts\TradePrint;
+use App\Modules\Pricing\Contracts\TradeSource as PricingTradeSource;
 use App\Modules\Risk\Contracts\RiskGuardInterface;
 use App\Modules\Shared\Exceptions\DomainException;
 use App\Modules\Shared\ValueObjects\PricePerFineGram;
@@ -58,6 +61,7 @@ final readonly class PlaceOrderService
         private OrderStateMachine $stateMachine,
         private OrderBookReader $book,
         private PriceReaderInterface $prices,
+        private QuoteWriterInterface $quotes,
     ) {}
 
     public function place(PlaceOrderCommand $command): OrderResult
@@ -100,8 +104,9 @@ final readonly class PlaceOrderService
             3, // retry on deadlock — the matching sweep takes many row locks
         );
 
-        // ── phase 3: events, after commit ─────────────────────────────────
+        // ── phase 3: events and market data, after commit ─────────────────
         $this->announce($command, $result);
+        $this->publishMarketData($instrument, $result);
 
         return $result;
     }
@@ -304,6 +309,40 @@ final readonly class PlaceOrderService
                 occurredAt: now()->toIso8601String(),
             ));
         }
+    }
+
+    /**
+     * Push what just happened into Pricing, through its contract.
+     *
+     * After commit, never inside the transaction: QuoteService writes rows and
+     * can raise price alerts, and neither belongs in a transaction that is
+     * holding order-book locks (AGENT_BRIEF rules 3 and 4).
+     *
+     * Pricing decides what each print may influence — only ORDER_BOOK prints
+     * move LAST — so everything is handed over and nothing is filtered here.
+     */
+    private function publishMarketData(Instrument $instrument, OrderResult $result): void
+    {
+        foreach ($result->trades as $trade) {
+            $this->quotes->recordTrade(new TradePrint(
+                instrumentId: $trade->instrument_id,
+                pricePerFineGramRial: $trade->price_per_gram_rial,
+                fineWeightMg: $trade->quantity_fine_mg,
+                executedAt: $trade->executed_at,
+                source: PricingTradeSource::from($trade->trade_source->value),
+                tradeId: $trade->id,
+            ));
+        }
+
+        $depth = $this->book->depth($instrument, 1);
+
+        $this->quotes->updateTopOfBook(
+            $instrument->id,
+            $depth->bestBid(),
+            $depth->bestBidQuantityMg(),
+            $depth->bestAsk(),
+            $depth->bestAskQuantityMg(),
+        );
     }
 
     /**

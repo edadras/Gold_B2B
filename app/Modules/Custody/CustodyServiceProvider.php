@@ -8,6 +8,8 @@ use App\Modules\Custody\Application\LotAllocator;
 use App\Modules\Custody\Contracts\AssayReaderInterface;
 use App\Modules\Custody\Contracts\GoldLotRepositoryInterface;
 use App\Modules\Custody\Contracts\LotAllocatorInterface;
+use App\Modules\Custody\Contracts\LotDeliveryInterface;
+use App\Modules\Custody\Infrastructure\Adapters\LotDeliveryService;
 use App\Modules\Custody\Infrastructure\Repositories\EloquentAssayReader;
 use App\Modules\Custody\Infrastructure\Repositories\EloquentGoldLotRepository;
 use App\Modules\Shared\Concerns\ModuleServiceProvider;
@@ -31,6 +33,9 @@ final class CustodyServiceProvider extends ModuleServiceProvider
             GoldLotRepositoryInterface::class => EloquentGoldLotRepository::class,
             AssayReaderInterface::class => EloquentAssayReader::class,
             LotAllocatorInterface::class => LotAllocator::class,
+            // The write side: Custody owns lot mutation, so Custody publishes
+            // it rather than leaving other modules to reach into Application/.
+            LotDeliveryInterface::class => LotDeliveryService::class,
         ];
     }
 

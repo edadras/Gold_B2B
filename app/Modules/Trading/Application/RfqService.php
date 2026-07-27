@@ -7,6 +7,9 @@ namespace App\Modules\Trading\Application;
 use App\Modules\Ledger\Contracts\GoldLedgerInterface;
 use App\Modules\Ledger\Contracts\RialLedgerInterface;
 use App\Modules\Ledger\Domain\LedgerReference;
+use App\Modules\Pricing\Contracts\QuoteWriterInterface;
+use App\Modules\Pricing\Contracts\TradePrint;
+use App\Modules\Pricing\Contracts\TradeSource as PricingTradeSource;
 use App\Modules\Shared\Exceptions\InsufficientBalanceException;
 use App\Modules\Shared\Exceptions\InvalidStateTransitionException;
 use App\Modules\Shared\ValueObjects\FineWeight;
@@ -54,6 +57,7 @@ final readonly class RfqService
         private TradeWriter $tradeWriter,
         private GoldLedgerInterface $goldLedger,
         private RialLedgerInterface $rialLedger,
+        private QuoteWriterInterface $quotes,
     ) {}
 
     public function create(CreateRfqCommand $command): Rfq
@@ -326,6 +330,8 @@ final readonly class RfqService
 
         event(TradeEventFactory::executed($trade));
 
+        $this->publishPrint($trade);
+
         return $trade;
     }
 
@@ -420,6 +426,26 @@ final readonly class RfqService
 
             return $quote;
         }, 3);
+    }
+
+
+    /**
+     * Fold the print into Pricing's day statistics, after commit.
+     *
+     * An OTC or RFQ print never moves the last price — Pricing enforces that
+     * through TradeSource::movesLastPrice() — but it does count towards volume
+     * and VWAP (§7.6), so it is handed over like any other.
+     */
+    private function publishPrint(Trade $trade): void
+    {
+        $this->quotes->recordTrade(new TradePrint(
+            instrumentId: $trade->instrument_id,
+            pricePerFineGramRial: $trade->price_per_gram_rial,
+            fineWeightMg: $trade->quantity_fine_mg,
+            executedAt: $trade->executed_at,
+            source: PricingTradeSource::from($trade->trade_source->value),
+            tradeId: $trade->id,
+        ));
     }
 
     private function lockRfq(int $rfqId): Rfq

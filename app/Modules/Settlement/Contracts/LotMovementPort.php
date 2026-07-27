@@ -7,24 +7,21 @@ namespace App\Modules\Settlement\Contracts;
 use App\Modules\Custody\Contracts\DTO\AllocationPlan;
 
 /**
- * The write side of custody, as Settlement needs it.
+ * The write side of custody, in Settlement's vocabulary.
  *
- * Custody's public surface (LotAllocatorInterface, GoldLotRepositoryInterface)
- * is read-only: it can tell Settlement which lots would satisfy a delivery, but
- * offers no contract for changing a lot's owner or splitting one. The
- * implementations exist — Custody\Application\LotOwnershipService and
- * SplitService — but they live outside Contracts/Events/Domain, so importing
- * them here would break module encapsulation (AGENT_BRIEF rule 7, enforced by
- * tests/Architecture/ArchitectureTest.php).
+ * The port exists so Settlement's services depend on "deliver this plan for
+ * settlement 42" rather than on Custody's own shape. Custody publishes the
+ * capability itself as Custody\Contracts\LotDeliveryInterface — a generic
+ * (referenceType, referenceId) contract that knows nothing about settlements —
+ * and Infrastructure\CustodyLotMovementAdapter is the thin translation between
+ * the two. That adapter is the default binding, so in production a settled
+ * settlement really does move the gold_lots rows.
  *
- * So Settlement declares the port it needs and lets the wiring supply an
- * implementation. NullLotMovementPort is bound by default: the ledger still
- * moves the gold and the settlement still completes, but no lot changes hands
- * until a real adapter is configured through
- * config('goldb2b.settlement.lot_movement_port'). Settlement's own test suite
- * binds one over Custody's services, which is how the worked-example test
- * proves that the lot's owner changes while its custodian and physical
- * location do not.
+ * NullLotMovementPort remains selectable through
+ * config('goldb2b.settlement.lot_movement_port') for a deployment that runs
+ * Settlement without Custody: the ledger still moves the gold, lot ownership
+ * does not follow, and isOperational() reports false so the difference is
+ * visible.
  */
 interface LotMovementPort
 {
