@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Application;
 
 use App\Modules\Admin\Contracts\AmlAdminPort;
+use App\Modules\Admin\Contracts\HealthIndicator;
 use App\Modules\Admin\Contracts\LedgerAdminPort;
 use App\Modules\Admin\Contracts\PlatformMetricsPort;
+use App\Modules\Admin\Contracts\PlatformStats;
 use App\Modules\Admin\Contracts\SettlementAdminPort;
+use App\Modules\Admin\Contracts\WorkQueueCounts;
 
 /**
  * Assembles the dashboard of docs/08-frontend-web/01-web-panels.md §1.9.
@@ -29,10 +32,10 @@ final class DashboardService
     /**
      * @return array{
      *     alerts: list<array{key: string, severity: string, title: string, count: int, href: ?string}>,
-     *     stats: \App\Modules\Admin\Contracts\PlatformStats,
-     *     queues: \App\Modules\Admin\Contracts\WorkQueueCounts,
+     *     stats: PlatformStats,
+     *     queues: WorkQueueCounts,
      *     settlementHealth: array{on_time: int, late: int, defaulted: int},
-     *     health: list<\App\Modules\Admin\Contracts\HealthIndicator>,
+     *     health: list<HealthIndicator>,
      *     discrepancyCount: int
      * }
      */

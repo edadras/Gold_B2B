@@ -59,10 +59,46 @@ use LogicException;
  */
 final class LedgerService implements LedgerInterface
 {
+    /**
+     * Attribution override for a write whose author is not the session user.
+     *
+     * Almost every ledger write happens inside a request made by the person
+     * responsible for it, so Auth::id() is the right answer and this stays
+     * null. A manual adjustment is the exception: it is posted by the *checker*
+     * of a dual-control pair, whose identity is the whole point of the control
+     * and is passed in explicitly rather than inferred from whoever happens to
+     * be holding the session.
+     */
+    private ?int $actingUserId = null;
+
     public function __construct(
         private readonly AccountLocker $locker,
         private readonly HashChainBuilder $hashChain,
     ) {}
+
+    /**
+     * Run $fn with ledger writes attributed to $userId.
+     *
+     * @internal for ManualAdjustmentService. Deliberately not on
+     *           LedgerInterface: a caller outside this module that could choose
+     *           whose name goes on a ledger row is a caller that can forge one.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $fn
+     * @return T
+     */
+    public function actingAs(?int $userId, callable $fn): mixed
+    {
+        $previous = $this->actingUserId;
+        $this->actingUserId = $userId;
+
+        try {
+            return $fn();
+        } finally {
+            $this->actingUserId = $previous;
+        }
+    }
 
     // ── reads ────────────────────────────────────────────────────────────────
 
@@ -648,7 +684,7 @@ final class LedgerService implements LedgerInterface
             'balance_after' => $newBalance,
             'description' => $description,
             'metadata' => $metadata,
-            'created_by_user_id' => Auth::id(),
+            'created_by_user_id' => $this->actingUserId ?? Auth::id(),
             'created_at' => $createdAt,
             'prev_hash' => $prevHash,
             'row_hash' => $this->hashChain->compute(

@@ -6,6 +6,7 @@ namespace App\Modules\Admin\Application;
 
 use App\Modules\Admin\Contracts\KycAdminPort;
 use App\Modules\Admin\Contracts\KycDossier;
+use App\Modules\Admin\Contracts\KycQueueItem;
 use App\Modules\Identity\Contracts\IdentityDirectory;
 use App\Modules\Identity\Contracts\OrganizationLifecycle;
 use App\Modules\Identity\Domain\OrganizationStatus;
@@ -41,7 +42,7 @@ final class KycQueueService
 
     /**
      * @param  list<string>  $statuses
-     * @return list<\App\Modules\Admin\Contracts\KycQueueItem>
+     * @return list<KycQueueItem>
      */
     public function queue(array $statuses = self::REVIEWABLE_STATUSES, int $limit = 100): array
     {

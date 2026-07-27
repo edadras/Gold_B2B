@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Application;
 
 use App\Modules\Admin\Contracts\SettlementAdminPort;
+use App\Modules\Admin\Contracts\SettlementEventRow;
 use App\Modules\Admin\Contracts\SettlementRow;
 use App\Modules\Admin\Infrastructure\Tables\TableSettlementAdminAdapter;
 
@@ -55,7 +56,7 @@ final class SettlementMonitorService
     }
 
     /**
-     * @return array{settlement: SettlementRow, timeline: list<\App\Modules\Admin\Contracts\SettlementEventRow>}|null
+     * @return array{settlement: SettlementRow, timeline: list<SettlementEventRow>}|null
      */
     public function detail(int $settlementId): ?array
     {

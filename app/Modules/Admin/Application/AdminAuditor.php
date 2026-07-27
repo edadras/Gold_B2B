@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Application;
 
 use App\Modules\Shared\Audit\AuditRecorder;
+use InvalidArgumentException;
 
 /**
  * Every audit row the operator panel writes goes through here.
@@ -71,7 +72,7 @@ final class AdminAuditor
         array $metadata = [],
     ): void {
         if (trim($note) === '') {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Admin action {$action} was recorded without a note; §1.11 requires one."
             );
         }

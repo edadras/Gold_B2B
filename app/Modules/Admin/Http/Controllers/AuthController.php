@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Admin\Http\Controllers;
 
 use App\Modules\Admin\Application\AdminAuditor;
+use App\Modules\Admin\Http\Requests\LoginRequest;
 use App\Modules\Identity\Contracts\IdentityDirectory;
 use App\Modules\Identity\Domain\Role;
 use App\Modules\Identity\Domain\Totp;
-use App\Modules\Admin\Http\Requests\LoginRequest;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

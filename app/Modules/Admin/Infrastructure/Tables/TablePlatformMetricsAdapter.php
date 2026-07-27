@@ -10,6 +10,7 @@ use App\Modules\Admin\Contracts\PlatformStats;
 use App\Modules\Admin\Contracts\WorkQueueCounts;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 /**
  * The dashboard's numbers (docs/08-frontend-web/01-web-panels.md §1.9).
@@ -112,8 +113,10 @@ final class TablePlatformMetricsAdapter implements PlatformMetricsPort
             tone: $lastSnapshot === null ? 'warn' : 'ok',
         );
 
+        // price_ticks records when the tick was received, not when the row was
+        // created — there is no created_at on that table.
         $lastTick = Schema::hasTable('price_ticks')
-            ? DB::table('price_ticks')->max('created_at')
+            ? DB::table('price_ticks')->max('received_at')
             : null;
 
         $out[] = new HealthIndicator(
@@ -124,7 +127,7 @@ final class TablePlatformMetricsAdapter implements PlatformMetricsPort
         );
 
         $pendingNotifications = Schema::hasTable('notification_deliveries')
-            ? (int) DB::table('notification_deliveries')->where('status', 'PENDING')->count()
+            ? (int) DB::table('notification_deliveries')->where('status', 'QUEUED')->count()
             : 0;
 
         $out[] = new HealthIndicator(
@@ -215,7 +218,7 @@ final class TablePlatformMetricsAdapter implements PlatformMetricsPort
             DB::select('SELECT 1');
 
             return true;
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return false;
         }
     }

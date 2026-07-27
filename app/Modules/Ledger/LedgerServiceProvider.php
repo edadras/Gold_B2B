@@ -6,11 +6,13 @@ namespace App\Modules\Ledger;
 
 use App\Modules\Ledger\Application\GoldLedgerService;
 use App\Modules\Ledger\Application\LedgerService;
+use App\Modules\Ledger\Application\ManualAdjustmentService;
 use App\Modules\Ledger\Application\RialLedgerService;
 use App\Modules\Ledger\Console\ReconcileLedgerCommand;
 use App\Modules\Ledger\Console\SnapshotLedgerCommand;
 use App\Modules\Ledger\Contracts\GoldLedgerInterface;
 use App\Modules\Ledger\Contracts\LedgerInterface;
+use App\Modules\Ledger\Contracts\ManualAdjustmentPoster;
 use App\Modules\Ledger\Contracts\RialLedgerInterface;
 use App\Modules\Ledger\Listeners\CreateLedgerAccountsForOrganization;
 use App\Modules\Shared\Concerns\ModuleServiceProvider;
@@ -35,6 +37,7 @@ final class LedgerServiceProvider extends ModuleServiceProvider
             LedgerInterface::class => LedgerService::class,
             GoldLedgerInterface::class => GoldLedgerService::class,
             RialLedgerInterface::class => RialLedgerService::class,
+            ManualAdjustmentPoster::class => ManualAdjustmentService::class,
         ];
     }
 

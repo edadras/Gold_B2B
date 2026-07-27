@@ -56,6 +56,21 @@ final class ArchitectureTest extends TestCase
         // over HTTP from the browser rather than in PHP — which is why a screen
         // full of Trading, Ledger and Settlement figures adds no edge here.
         'Web' => ['Shared', 'Identity'],
+        // The operator admin panel. It reads from nearly every module and
+        // imports almost none of them: it declares its own ports under
+        // Admin/Contracts and binds each to an adapter that queries by table
+        // name, guarded with Schema::hasTable. Where a module does publish what
+        // the panel needs — Identity's IdentityDirectory and
+        // OrganizationLifecycle — the contract is used and no adapter exists.
+        //
+        // Ledger is the one place where reading by table name was not good
+        // enough. The manual adjustment of §1.10 WRITES, and an adapter that
+        // reproduces the ledger's lock order, running balance and hash chain
+        // does not fail when it gets one of them wrong — it fails months later
+        // in the nightly chain verification. So Ledger publishes
+        // ManualAdjustmentPoster and the panel posts through the same writer as
+        // every trade.
+        'Admin' => ['Shared', 'Identity', 'Ledger'],
     ];
 
     /** Namespaces where floating-point arithmetic is forbidden outright. */

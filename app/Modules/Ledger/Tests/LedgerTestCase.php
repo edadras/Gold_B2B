@@ -16,7 +16,6 @@ use App\Modules\Ledger\Domain\LedgerReference;
 use App\Modules\Ledger\LedgerServiceProvider;
 use App\Modules\Shared\ValueObjects\FineWeight;
 use App\Modules\Shared\ValueObjects\Rial;
-use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 
@@ -31,7 +30,6 @@ use Illuminate\Support\Facades\DB;
  */
 abstract class LedgerTestCase extends BaseTestCase
 {
-
     // ── fixtures ─────────────────────────────────────────────────────────────
 
     protected function seedSystemAccounts(): void
