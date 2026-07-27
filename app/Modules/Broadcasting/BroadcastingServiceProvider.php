@@ -102,6 +102,9 @@ final class BroadcastingServiceProvider extends ModuleServiceProvider
         $this->app->singleton(MarketBroadcaster::class);
         $this->app->singleton(MemberBroadcaster::class);
         $this->app->singleton(ChannelAuthorizer::class);
+        // Singleton so its "does Notification handle this?" answers are worked
+        // out once rather than on every dispatched event.
+        $this->app->singleton(BroadcastNotification::class);
     }
 
     public function boot(): void
@@ -191,7 +194,7 @@ final class BroadcastingServiceProvider extends ModuleServiceProvider
             'App\Modules\Dispute\Events\DisputeResolved' => [BroadcastNotification::class],
             'App\Modules\Reputation\Events\TierPromoted' => [BroadcastNotification::class],
 
-            // Does not exist yet — see BroadcastNotification.
+            // The good path: an already-persisted, already-deduplicated row.
             'App\Modules\Notification\Events\NotificationDelivered' => [BroadcastNotification::class],
         ];
     }

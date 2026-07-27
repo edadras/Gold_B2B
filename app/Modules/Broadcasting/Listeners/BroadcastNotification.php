@@ -6,6 +6,7 @@ namespace App\Modules\Broadcasting\Listeners;
 
 use App\Modules\Broadcasting\Application\MemberBroadcaster;
 use App\Modules\Broadcasting\Domain\EventShape;
+use Illuminate\Support\Facades\Event;
 
 /**
  * Live notification delivery on `private-org.{orgId}.notification` (§3.2).
@@ -13,16 +14,15 @@ use App\Modules\Broadcasting\Domain\EventShape;
  * TWO INPUTS, ONE OUTPUT.
  *
  * 1. `App\Modules\Notification\Events\NotificationDelivered`, by string name.
- *    That class does not exist yet — the Notification module currently writes
- *    its rows and returns a DispatchResult without emitting an event — but
- *    registering the listener now costs nothing (Laravel never fires a name
- *    nobody dispatches) and means the socket lights up the moment Notification
- *    starts announcing itself, with no change here. Broadcasting could not
- *    have added that event anyway: Notification is another module's code.
+ *    This is the good path: the row is already deduplicated, already targeted
+ *    at the right people by role, already in the member's feed. Broadcasting
+ *    just puts it on the socket.
  *
- * 2. A curated list of domain events that a member must be told about even
- *    when nobody is looking at the blotter — an overdue settlement, a rejected
- *    order, an assay variance. This is what actually feeds the bell icon today.
+ * 2. A curated list of raw domain events, for a deployment slice that runs
+ *    without the Notification module. It is a *fallback*: if Notification is
+ *    installed and listening for an event, that event is skipped here, because
+ *    a NotificationDelivered is coming for it and a member must not receive the
+ *    same alert twice under two different ids. See `notificationHandles()`.
  *
  * NO RENDERED TEXT. The frame carries a `code` and a small `data` map, not a
  * Persian sentence: §3.5 forbids `_display` fields on the socket and says the
@@ -70,6 +70,9 @@ final class BroadcastNotification
         'ownerOrganizationId',
     ];
 
+    /** @var array<string, bool> event class => Notification listens for it */
+    private array $notificationHandles = [];
+
     public function __construct(private readonly MemberBroadcaster $members) {}
 
     public function handle(object $event): void
@@ -83,7 +86,7 @@ final class BroadcastNotification
             return;
         }
 
-        if (! isset(self::CURATED[$basename])) {
+        if (! isset(self::CURATED[$basename]) || $this->notificationHandles($event::class)) {
             return;
         }
 
@@ -111,10 +114,11 @@ final class BroadcastNotification
     }
 
     /**
-     * The shape Notification will emit when it grows an event: a persisted
-     * notification row, already deduplicated and already respecting quiet
-     * hours and preferences. Everything is read tolerantly so that whatever
-     * that class ends up looking like, the worst case is a dropped frame.
+     * A persisted notification row: already deduplicated, already targeted,
+     * already in the member's feed under this id. Everything is still read
+     * tolerantly — if Notification reshapes its event, the worst case here is a
+     * dropped frame, never an exception inside the dispatcher that takes the
+     * originating request down with it.
      */
     private function fromNotificationModule(EventShape $shape): void
     {
@@ -137,6 +141,40 @@ final class BroadcastNotification
             category: $shape->string('category'),
             priority: $shape->string('priority'),
         );
+    }
+
+    /**
+     * Is the Notification module going to turn this same domain event into a
+     * notification row?
+     *
+     * If it is, the fallback stays quiet and waits for the NotificationDelivered
+     * that follows — one alert, one id, the id the member's feed will also show,
+     * so a socket frame and a later REST poll collapse into one item. Without
+     * this, seven of the ten curated events would arrive twice.
+     *
+     * Asked of the dispatcher rather than hardcoded, because the answer is
+     * exactly "what NotificationServiceProvider registered" and a list copied
+     * into this class would start drifting the day someone adds a code there.
+     * Notification's listener is named by string: this module sits below it in
+     * the dependency graph and may not import it.
+     */
+    private function notificationHandles(string $eventClass): bool
+    {
+        if (array_key_exists($eventClass, $this->notificationHandles)) {
+            return $this->notificationHandles[$eventClass];
+        }
+
+        $handled = false;
+
+        foreach (Event::getRawListeners()[$eventClass] ?? [] as $listener) {
+            if (is_string($listener) && str_starts_with($listener, 'App\Modules\Notification\Listeners\\')) {
+                $handled = true;
+
+                break;
+            }
+        }
+
+        return $this->notificationHandles[$eventClass] = $handled;
     }
 
     private function basename(object $event): string

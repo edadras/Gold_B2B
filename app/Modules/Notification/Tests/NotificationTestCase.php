@@ -11,7 +11,6 @@ use App\Modules\Notification\Contracts\Recipient;
 use App\Modules\Notification\Contracts\RecipientDirectory;
 use App\Modules\Notification\Domain\Category;
 use App\Modules\Notification\Infrastructure\ArrayRecipientDirectory;
-use App\Modules\Notification\NotificationServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -35,7 +34,6 @@ abstract class NotificationTestCase extends TestCase
      * setUpTraits(), which runs before any afterApplicationCreated callback, so
      * a provider registered later would contribute no migrations.
      */
-
     protected function setUp(): void
     {
         parent::setUp();

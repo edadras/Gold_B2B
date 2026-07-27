@@ -14,6 +14,7 @@ use App\Modules\Notification\Contracts\RecipientDirectory;
 use App\Modules\Notification\Domain\Channel;
 use App\Modules\Notification\Domain\NotificationCode;
 use App\Modules\Notification\Domain\RoleTargeting;
+use App\Modules\Notification\Events\NotificationDelivered;
 use App\Modules\Notification\Infrastructure\Notification;
 use App\Modules\Notification\Infrastructure\NotificationDelivery;
 use Illuminate\Support\Carbon;
@@ -89,6 +90,24 @@ final class NotificationDispatcher implements Notifier
 
             $notificationIds[] = $inApp->notificationId;
             $message = $message->withNotificationId($inApp->notificationId);
+
+            // Announced here, where the row genuinely came into existence: a
+            // deduplicated or aggregated recipient took one of the `continue`s
+            // above and produces no event. The row is already committed, so a
+            // listener that reads it back sees it.
+            event(new NotificationDelivered(
+                notificationId: $inApp->notificationId,
+                organizationId: $spec->organizationId,
+                userId: $recipient->id,
+                code: $spec->code->value,
+                category: $spec->category()->value,
+                priority: $spec->priority()->value,
+                subject: $message->title,
+                body: $message->body,
+                subjectType: $spec->subjectType,
+                subjectId: $spec->subjectId,
+                occurredAt: $now->toIso8601String(),
+            ));
 
             foreach ($this->channelsFor($spec->code, $recipient, $now) as $channel) {
                 foreach ($this->destinations($channel, $recipient) as $destination) {

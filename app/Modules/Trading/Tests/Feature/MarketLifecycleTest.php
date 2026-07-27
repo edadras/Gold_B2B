@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Trading\Tests\Feature;
 
+use App\Modules\Ledger\Domain\Bucket;
 use App\Modules\Pricing\Events\CircuitBreakerTriggered;
 use App\Modules\Pricing\Events\NoPriceAvailable;
 use App\Modules\Trading\Application\CancelOrderService;
 use App\Modules\Trading\Application\OrderBookReader;
 use App\Modules\Trading\Application\OrderExpiryService;
+use App\Modules\Trading\Domain\Exceptions\MarketClosedException;
 use App\Modules\Trading\Domain\MarketSessionStatus;
 use App\Modules\Trading\Domain\OrderStatus;
 use App\Modules\Trading\Domain\Side;
@@ -58,7 +60,7 @@ final class MarketLifecycleTest extends TradingTestCase
 
         $this->assertSame(OrderStatus::CANCELLED, $cancelled->status);
         $this->assertSame(5_000_000, $this->goldBalance(self::SELLER_ORG));
-        $this->assertSame(0, $this->goldBalance(self::SELLER_ORG, \App\Modules\Ledger\Domain\Bucket::RESERVED));
+        $this->assertSame(0, $this->goldBalance(self::SELLER_ORG, Bucket::RESERVED));
 
         $this->assertEveryLedgerGroupBalances();
         $this->assertSystemConserved();
@@ -152,6 +154,37 @@ final class MarketLifecycleTest extends TradingTestCase
         $this->assertSame(MarketSessionStatus::PAUSED, $session?->status);
         $this->assertNotNull($session?->resume_at);
         $this->assertStringContainsString('Circuit breaker', (string) $session?->pause_reason);
+    }
+
+    #[Test]
+    public function a_pause_stops_new_orders_but_never_traps_a_resting_one(): void
+    {
+        // "امکان لغو سفارش، عدم امکان ثبت جدید" — §4.8. Both halves matter, and
+        // the second is the one that costs money if it is wrong: a member
+        // cannot be locked out of releasing collateral because the platform
+        // paused the instrument.
+        $order = $this->placeLimit(self::SELLER_ORG, self::SELLER_USER, Side::SELL, 100_000, self::PRICE)->order;
+
+        $reservedWhileOpen = $this->goldBalance(self::SELLER_ORG, Bucket::RESERVED);
+        $this->assertSame(100_000, $reservedWhileOpen);
+
+        $this->sessions()->pauseForCircuitBreaker($this->instrument()->id, 384, 300);
+
+        // Entry is closed.
+        $this->assertThrows(
+            fn () => $this->placeLimit(self::BUYER_ORG, self::BUYER_USER, Side::BUY, 100_000, self::PRICE),
+            MarketClosedException::class,
+        );
+
+        // Cancellation is not, and it releases the reservation like any other.
+        $cancelled = $this->app->make(CancelOrderService::class)
+            ->cancel($order->id, self::SELLER_ORG, self::SELLER_USER);
+
+        $this->assertSame(OrderStatus::CANCELLED, $cancelled->status);
+        $this->assertSame(0, $this->goldBalance(self::SELLER_ORG, Bucket::RESERVED));
+
+        $this->assertEveryLedgerGroupBalances();
+        $this->assertSystemConserved();
     }
 
     #[Test]
