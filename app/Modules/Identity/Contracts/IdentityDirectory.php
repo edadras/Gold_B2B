@@ -16,6 +16,16 @@ interface IdentityDirectory
 
     public function findUser(int $userId): ?UserSnapshot;
 
+    /**
+     * Identity's verdicts on the member's registered identifiers, for the
+     * compliance review screen.
+     *
+     * Lives here rather than on the snapshot because it costs extra queries
+     * and only the KYC review path wants it; `findOrganization` stays cheap
+     * enough for hot paths like order placement.
+     */
+    public function organizationIdentityChecks(int $organizationId): ?OrganizationIdentityChecks;
+
     /** True only when the member is ACTIVE and may open new exposure. */
     public function organizationCanTrade(int $organizationId): bool;
 

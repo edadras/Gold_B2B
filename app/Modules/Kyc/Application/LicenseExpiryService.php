@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Kyc\Application;
 
-use App\Modules\Identity\Application\OrganizationStateMachine;
+use App\Modules\Identity\Contracts\IdentityDirectory;
+use App\Modules\Identity\Contracts\OrganizationLifecycle;
 use App\Modules\Identity\Domain\OrganizationStatus;
-use App\Modules\Identity\Infrastructure\Models\Organization;
 use App\Modules\Kyc\Domain\LicenseStatus;
 use App\Modules\Kyc\Events\LicenseExpired;
 use App\Modules\Kyc\Events\LicenseExpiring;
@@ -29,6 +29,10 @@ use Illuminate\Support\Facades\Event;
  *
  * Idempotent: each rung sets its own `reminder_sent_*` flag, so the command may
  * run as often as it likes without duplicating notifications.
+ *
+ * The member is only ever read through IdentityDirectory and only ever moved
+ * through OrganizationLifecycle, so no Identity model reaches this module —
+ * docs/02-architecture/02-modules.md §2.3.
  */
 final class LicenseExpiryService
 {
@@ -36,7 +40,8 @@ final class LicenseExpiryService
     public const REMINDER_LADDER_DAYS = [30, 10, 1];
 
     public function __construct(
-        private readonly OrganizationStateMachine $organizationState,
+        private readonly IdentityDirectory $directory,
+        private readonly OrganizationLifecycle $organizations,
     ) {}
 
     /**
@@ -125,7 +130,8 @@ final class LicenseExpiryService
             ->cursor();
 
         foreach ($licenses as $license) {
-            $organization = Organization::query()->find($license->organization_id);
+            $organizationId = (int) $license->organization_id;
+            $organization = $this->directory->findOrganization($organizationId);
 
             if ($organization === null) {
                 continue;
@@ -133,7 +139,7 @@ final class LicenseExpiryService
 
             // A member with another still-valid licence keeps trading.
             $hasValidAlternative = BusinessLicense::query()
-                ->where('organization_id', $license->organization_id)
+                ->where('organization_id', $organizationId)
                 ->whereKeyNot($license->id)
                 ->usable()
                 ->whereDate('expires_at', '>=', $asOf->copy()->startOfDay())
@@ -149,9 +155,9 @@ final class LicenseExpiryService
             $didRestrict = false;
 
             if (! $hasValidAlternative
-                && $organization->status->canTransitionTo(OrganizationStatus::RESTRICTED)) {
-                $this->organizationState->transitionBySystem(
-                    organization: $organization,
+                && $organization->organizationStatus()->canTransitionTo(OrganizationStatus::RESTRICTED)) {
+                $this->organizations->transitionBySystem(
+                    organizationId: $organizationId,
                     target: OrganizationStatus::RESTRICTED,
                     reason: 'انقضای جواز کسب شماره '.$license->license_no,
                     metadata: ['business_license_id' => (int) $license->id],
@@ -162,7 +168,7 @@ final class LicenseExpiryService
             }
 
             Event::dispatch(new LicenseExpired(
-                organizationId: (int) $license->organization_id,
+                organizationId: $organizationId,
                 businessLicenseId: (int) $license->id,
                 licenseNo: (string) $license->license_no,
                 expiredAt: $license->expires_at->toDateString(),

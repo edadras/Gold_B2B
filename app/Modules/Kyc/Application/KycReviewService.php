@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Kyc\Application;
 
-use App\Modules\Identity\Application\OrganizationStateMachine;
-use App\Modules\Identity\Application\PermissionChecker;
+use App\Modules\Identity\Contracts\IdentityDirectory;
+use App\Modules\Identity\Contracts\OrganizationLifecycle;
+use App\Modules\Identity\Contracts\OrganizationSnapshot;
+use App\Modules\Identity\Contracts\UserSnapshot;
 use App\Modules\Identity\Domain\OrganizationStatus;
 use App\Modules\Identity\Domain\Permission;
 use App\Modules\Identity\Domain\Validators\IbanValidator;
-use App\Modules\Identity\Domain\Validators\LegalIdValidator;
-use App\Modules\Identity\Domain\Validators\NationalIdValidator;
-use App\Modules\Identity\Infrastructure\Models\Organization;
-use App\Modules\Identity\Infrastructure\Models\User;
 use App\Modules\Kyc\Domain\KycDecision;
 use App\Modules\Kyc\Domain\KycStatus;
 use App\Modules\Kyc\Events\KycApproved;
@@ -26,6 +24,7 @@ use App\Modules\Shared\Exceptions\InvalidStateTransitionException;
 use App\Modules\Shared\Exceptions\OperationNotPermittedException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
 
 /**
  * The compliance officer's side of KYC (docs/03-domain/01-identity-kyc.md §1.5).
@@ -36,21 +35,25 @@ use Illuminate\Support\Facades\Event;
  *   2. an officer may never review their own organisation;
  *   3. approval moves the organisation VERIFIED → ACTIVE, and that transition
  *      is what triggers ledger account creation, via OrganizationActivated.
+ *
+ * Organisations and officers are addressed by id: reads go through
+ * IdentityDirectory, actions through OrganizationLifecycle, so no Identity
+ * model or application service crosses the boundary.
  */
 final class KycReviewService
 {
     public function __construct(
-        private readonly OrganizationStateMachine $organizationState,
-        private readonly PermissionChecker $permissions,
+        private readonly IdentityDirectory $directory,
+        private readonly OrganizationLifecycle $organizations,
         private readonly KycSubmissionService $submissions,
     ) {}
 
     /** SUBMITTED → IN_REVIEW: the officer picks the dossier off the queue. */
-    public function claim(Organization $organization, User $officer): KycProfile
+    public function claim(int $organizationId, int $officerUserId): KycProfile
     {
-        $this->assertOfficerMayReview($organization, $officer);
+        $this->assertOfficerMayReview($organizationId, $officerUserId);
 
-        $profile = $this->submissions->profileFor($organization);
+        $profile = $this->submissions->profileFor($organizationId);
 
         if (! $profile->status->canTransitionTo(KycStatus::IN_REVIEW)) {
             throw new InvalidStateTransitionException(
@@ -72,52 +75,56 @@ final class KycReviewService
      * ACTIVE means "the ledger accounts exist and limits are assigned". Keeping
      * them separate leaves a visible state for the automatic step to fail in.
      */
-    public function approve(Organization $organization, User $officer, string $notes): KycProfile
+    public function approve(int $organizationId, int $officerUserId, string $notes): KycProfile
     {
         $this->assertNoteProvided($notes);
-        $this->assertOfficerMayReview($organization, $officer);
+        $this->assertOfficerMayReview($organizationId, $officerUserId);
 
-        $profile = $this->submissions->profileFor($organization);
+        $organization = $this->snapshot($organizationId);
+        $profile = $this->submissions->profileFor($organizationId);
         $this->assertReviewable($profile, KycStatus::APPROVED);
 
-        $checks = $this->automatedChecks($organization);
-        $nextReviewDue = now()->addMonths($organization->risk_level->reviewIntervalMonths())->toDateString();
+        $checks = $this->automatedChecks($organizationId);
+        $nextReviewDue = now()
+            ->addMonths($organization->organizationRiskLevel()->reviewIntervalMonths())
+            ->toDateString();
 
-        DB::transaction(function () use ($profile, $organization, $officer, $notes, $checks, $nextReviewDue): void {
+        DB::transaction(function () use ($profile, $organizationId, $officerUserId, $notes, $checks, $nextReviewDue): void {
             $profile->status = KycStatus::APPROVED;
             $profile->approved_at = now();
-            $profile->approved_by_user_id = $officer->id;
+            $profile->approved_by_user_id = $officerUserId;
             $profile->last_decision_note = $notes;
             $profile->next_review_due_at = $nextReviewDue;
             $profile->save();
 
-            $this->recordReview($profile, $organization, $officer, KycDecision::APPROVED, $notes, $checks, []);
+            $this->recordReview($profile, $organizationId, $officerUserId, KycDecision::APPROVED, $notes, $checks, []);
         });
 
-        // Outside the transaction: each of these dispatches events of its own.
-        if ($organization->status->canTransitionTo(OrganizationStatus::VERIFIED)) {
-            $organization = $this->organizationState->transition(
-                organization: $organization,
+        // Outside the transaction: each transition dispatches events of its own,
+        // and events must never fire from inside one (AGENT_BRIEF rule 3).
+        if ($this->organizations->currentStatus($organizationId)->canTransitionTo(OrganizationStatus::VERIFIED)) {
+            $this->organizations->transition(
+                organizationId: $organizationId,
                 target: OrganizationStatus::VERIFIED,
-                actorUserId: (int) $officer->id,
+                actorUserId: $officerUserId,
                 reason: 'تأیید افسر انطباق',
             );
         }
 
         // VERIFIED → ACTIVE is automatic (docs §1.2). OrganizationActivated is
         // what Ledger listens for to create the member's accounts.
-        if ($organization->status->canTransitionTo(OrganizationStatus::ACTIVE)) {
-            $this->organizationState->transitionBySystem(
-                organization: $organization,
+        if ($this->organizations->currentStatus($organizationId)->canTransitionTo(OrganizationStatus::ACTIVE)) {
+            $this->organizations->transitionBySystem(
+                organizationId: $organizationId,
                 target: OrganizationStatus::ACTIVE,
                 reason: 'ایجاد خودکار حساب دفتر پس از تأیید KYC',
             );
         }
 
         Event::dispatch(new KycApproved(
-            organizationId: (int) $organization->id,
+            organizationId: $organizationId,
             kycProfileId: (int) $profile->id,
-            reviewerUserId: (int) $officer->id,
+            reviewerUserId: $officerUserId,
             notes: $notes,
             nextReviewDueAt: $nextReviewDue,
             occurredAt: now()->toIso8601String(),
@@ -126,38 +133,38 @@ final class KycReviewService
         return $profile;
     }
 
-    public function reject(Organization $organization, User $officer, string $notes): KycProfile
+    public function reject(int $organizationId, int $officerUserId, string $notes): KycProfile
     {
         $this->assertNoteProvided($notes);
-        $this->assertOfficerMayReview($organization, $officer);
+        $this->assertOfficerMayReview($organizationId, $officerUserId);
 
-        $profile = $this->submissions->profileFor($organization);
+        $profile = $this->submissions->profileFor($organizationId);
         $this->assertReviewable($profile, KycStatus::REJECTED);
 
-        $checks = $this->automatedChecks($organization);
+        $checks = $this->automatedChecks($organizationId);
 
-        DB::transaction(function () use ($profile, $organization, $officer, $notes, $checks): void {
+        DB::transaction(function () use ($profile, $organizationId, $officerUserId, $notes, $checks): void {
             $profile->status = KycStatus::REJECTED;
             $profile->rejected_at = now();
             $profile->last_decision_note = $notes;
             $profile->save();
 
-            $this->recordReview($profile, $organization, $officer, KycDecision::REJECTED, $notes, $checks, []);
+            $this->recordReview($profile, $organizationId, $officerUserId, KycDecision::REJECTED, $notes, $checks, []);
         });
 
-        if ($organization->status->canTransitionTo(OrganizationStatus::REJECTED)) {
-            $this->organizationState->transition(
-                organization: $organization,
+        if ($this->organizations->currentStatus($organizationId)->canTransitionTo(OrganizationStatus::REJECTED)) {
+            $this->organizations->transition(
+                organizationId: $organizationId,
                 target: OrganizationStatus::REJECTED,
-                actorUserId: (int) $officer->id,
+                actorUserId: $officerUserId,
                 reason: $notes,
             );
         }
 
         Event::dispatch(new KycRejected(
-            organizationId: (int) $organization->id,
+            organizationId: $organizationId,
             kycProfileId: (int) $profile->id,
-            reviewerUserId: (int) $officer->id,
+            reviewerUserId: $officerUserId,
             notes: $notes,
             occurredAt: now()->toIso8601String(),
         ));
@@ -172,46 +179,46 @@ final class KycReviewService
      *                                      can say exactly what is wrong
      */
     public function requestInfo(
-        Organization $organization,
-        User $officer,
+        int $organizationId,
+        int $officerUserId,
         string $notes,
         array $missingItems = [],
     ): KycProfile {
         $this->assertNoteProvided($notes);
-        $this->assertOfficerMayReview($organization, $officer);
+        $this->assertOfficerMayReview($organizationId, $officerUserId);
 
-        $profile = $this->submissions->profileFor($organization);
+        $profile = $this->submissions->profileFor($organizationId);
         $this->assertReviewable($profile, KycStatus::INFO_REQUIRED);
 
-        $checks = $this->automatedChecks($organization);
+        $checks = $this->automatedChecks($organizationId);
 
         if ($missingItems === []) {
-            $missingItems = $this->submissions->missingItems($organization);
+            $missingItems = $this->submissions->missingItems($organizationId);
         }
 
-        DB::transaction(function () use ($profile, $organization, $officer, $notes, $checks, $missingItems): void {
+        DB::transaction(function () use ($profile, $organizationId, $officerUserId, $notes, $checks, $missingItems): void {
             $profile->status = KycStatus::INFO_REQUIRED;
             $profile->last_decision_note = $notes;
             $profile->save();
 
             $this->recordReview(
-                $profile, $organization, $officer, KycDecision::INFO_REQUIRED, $notes, $checks, $missingItems
+                $profile, $organizationId, $officerUserId, KycDecision::INFO_REQUIRED, $notes, $checks, $missingItems
             );
         });
 
-        if ($organization->status->canTransitionTo(OrganizationStatus::INFO_REQUIRED)) {
-            $this->organizationState->transition(
-                organization: $organization,
+        if ($this->organizations->currentStatus($organizationId)->canTransitionTo(OrganizationStatus::INFO_REQUIRED)) {
+            $this->organizations->transition(
+                organizationId: $organizationId,
                 target: OrganizationStatus::INFO_REQUIRED,
-                actorUserId: (int) $officer->id,
+                actorUserId: $officerUserId,
                 reason: $notes,
             );
         }
 
         Event::dispatch(new KycInfoRequired(
-            organizationId: (int) $organization->id,
+            organizationId: $organizationId,
             kycProfileId: (int) $profile->id,
-            reviewerUserId: (int) $officer->id,
+            reviewerUserId: $officerUserId,
             notes: $notes,
             missingItems: array_values($missingItems),
             occurredAt: now()->toIso8601String(),
@@ -222,37 +229,35 @@ final class KycReviewService
 
     /**
      * The machine verdicts shown on the review screen (docs §1.5). Stored with
-     * the decision so a later audit sees what the officer saw.
+     * the decision so a later audit sees exactly what the officer saw.
+     *
+     * The identifier verdicts come from Identity, which is the only module that
+     * may decrypt them; the licence and IBAN checks are over Kyc's own tables.
      *
      * @return array<string, mixed>
      */
-    public function automatedChecks(Organization $organization): array
+    public function automatedChecks(int $organizationId): array
     {
-        $nationalId = (string) ($organization->national_id_enc ?? '');
-        $legalId = (string) ($organization->legal_id_enc ?? '');
+        $identity = $this->directory->organizationIdentityChecks($organizationId);
 
         $license = BusinessLicense::query()
-            ->where('organization_id', $organization->id)
+            ->where('organization_id', $organizationId)
             ->orderByDesc('expires_at')
             ->first();
 
         $ibansValid = BankAccount::query()
-            ->where('organization_id', $organization->id)
+            ->where('organization_id', $organizationId)
             ->get()
             ->every(static fn (BankAccount $a): bool => IbanValidator::isValid((string) ($a->iban_enc ?? '')));
 
-        $duplicateNationalId = $nationalId !== '' && Organization::query()
-            ->where('national_id_hash', $organization->national_id_hash)
-            ->whereKeyNot($organization->id)
-            ->exists();
-
         return [
-            'national_id_valid' => $nationalId === '' ? null : NationalIdValidator::isValid($nationalId),
-            'legal_id_valid' => $legalId === '' ? null : LegalIdValidator::isValid($legalId),
+            'national_id_valid' => $identity?->nationalIdValid,
+            'legal_id_valid' => $identity?->legalIdValid,
+            'duplicate_national_id' => $identity?->duplicateNationalId ?? false,
+            'duplicate_legal_id' => $identity?->duplicateLegalId ?? false,
             'iban_valid' => $ibansValid,
             'license_present' => $license !== null,
             'license_days_remaining' => $license?->daysUntilExpiry(),
-            'duplicate_national_id' => $duplicateNationalId,
             // Sanctions screening is the Risk/AML module's job; it publishes its
             // verdict onto the review screen through its own contract.
             'sanctions_screened' => null,
@@ -265,13 +270,23 @@ final class KycReviewService
      * Checked before anything else so a conflicted officer cannot even see the
      * automated results of their own file.
      */
-    private function assertOfficerMayReview(Organization $organization, User $officer): void
+    private function assertOfficerMayReview(int $organizationId, int $officerUserId): void
     {
-        if ((int) $officer->organization_id === (int) $organization->id) {
+        $officer = $this->officer($officerUserId);
+
+        if ($officer->organizationId === $organizationId) {
             throw new OperationNotPermittedException('officer_cannot_review_own_organization');
         }
 
-        if ($this->permissions->denies($officer, Permission::PLATFORM_KYC_REVIEW)) {
+        // Platform-scoped permission: the tenancy leg of the check is satisfied
+        // by the officer's own organisation, not the member under review.
+        $permitted = $this->directory->userMayActOn(
+            $officerUserId,
+            Permission::PLATFORM_KYC_REVIEW->value,
+            $officer->organizationId,
+        );
+
+        if (! $permitted) {
             throw new OperationNotPermittedException(
                 'missing_permission:'.Permission::PLATFORM_KYC_REVIEW->value
             );
@@ -308,22 +323,44 @@ final class KycReviewService
      */
     private function recordReview(
         KycProfile $profile,
-        Organization $organization,
-        User $officer,
+        int $organizationId,
+        int $officerUserId,
         KycDecision $decision,
         string $notes,
         array $checks,
         array $missingItems,
     ): void {
         KycReview::query()->create([
-            'organization_id' => $organization->id,
+            'organization_id' => $organizationId,
             'kyc_profile_id' => $profile->id,
-            'reviewer_user_id' => $officer->id,
+            'reviewer_user_id' => $officerUserId,
             'decision' => $decision->value,
             'notes' => $notes,
             'automated_checks' => $checks,
             'missing_items' => $missingItems === [] ? null : array_values($missingItems),
             'reviewed_at' => now(),
         ]);
+    }
+
+    private function snapshot(int $organizationId): OrganizationSnapshot
+    {
+        $organization = $this->directory->findOrganization($organizationId);
+
+        if ($organization === null) {
+            throw new InvalidArgumentException("Unknown organization: {$organizationId}");
+        }
+
+        return $organization;
+    }
+
+    private function officer(int $officerUserId): UserSnapshot
+    {
+        $officer = $this->directory->findUser($officerUserId);
+
+        if ($officer === null) {
+            throw new OperationNotPermittedException('unknown_reviewer');
+        }
+
+        return $officer;
     }
 }

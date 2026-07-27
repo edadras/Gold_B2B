@@ -50,8 +50,13 @@ final class KycFlowTest extends KycTestCase
         $this->completeDossier($organization);
         $officer = $this->makeComplianceOfficer();
 
+        // Kyc's services are addressed by id; the factories stay because test
+        // fixtures are exempt from the module-boundary rule.
+        $organizationId = (int) $organization->id;
+        $officerId = (int) $officer->id;
+
         // --- submit ----------------------------------------------------
-        $profile = $this->submissions->submit($organization);
+        $profile = $this->submissions->submit($organizationId);
 
         $this->assertSame(KycStatus::SUBMITTED, $profile->status);
         $this->assertSame(1, (int) $profile->submission_count);
@@ -59,10 +64,9 @@ final class KycFlowTest extends KycTestCase
         Event::assertDispatched(KycSubmitted::class);
 
         // --- officer asks for more -------------------------------------
-        $organization = $organization->fresh();
         $profile = $this->reviews->requestInfo(
-            $organization,
-            $officer,
+            $organizationId,
+            $officerId,
             'تصویر جواز کسب خوانا نیست.',
             ['document:BUSINESS_LICENSE'],
         );
@@ -75,18 +79,16 @@ final class KycFlowTest extends KycTestCase
         );
 
         // --- member fixes it and resubmits -----------------------------
-        $organization = $organization->fresh();
-        $this->attachDocument($organization, DocumentType::BUSINESS_LICENSE);
+        $this->attachDocument($organization->fresh(), DocumentType::BUSINESS_LICENSE);
 
-        $profile = $this->submissions->submit($organization);
+        $profile = $this->submissions->submit($organizationId);
 
         $this->assertSame(KycStatus::SUBMITTED, $profile->status);
         $this->assertSame(2, (int) $profile->submission_count);
         $this->assertSame(OrganizationStatus::UNDER_REVIEW, $organization->fresh()->status);
 
         // --- officer approves ------------------------------------------
-        $organization = $organization->fresh();
-        $profile = $this->reviews->approve($organization, $officer, 'مدارک کامل و معتبر است.');
+        $profile = $this->reviews->approve($organizationId, $officerId, 'مدارک کامل و معتبر است.');
 
         $this->assertSame(KycStatus::APPROVED, $profile->status);
         $this->assertNotNull($profile->next_review_due_at);
@@ -125,7 +127,7 @@ final class KycFlowTest extends KycTestCase
         $organization = Organization::factory()->create();
 
         try {
-            $this->submissions->submit($organization);
+            $this->submissions->submit((int) $organization->id);
             $this->fail('an empty dossier must not reach the compliance queue');
         } catch (IncompleteKycException $e) {
             $this->assertContains('document:NATIONAL_CARD_FRONT', $e->missingItems);
@@ -147,7 +149,7 @@ final class KycFlowTest extends KycTestCase
 
         $organization = Organization::factory()->legalEntity()->create();
 
-        $missing = $this->submissions->missingItems($organization);
+        $missing = $this->submissions->missingItems((int) $organization->id);
 
         $this->assertContains('document:ARTICLES_OF_ASSOCIATION', $missing);
         $this->assertContains('document:SIGNATURE_CERTIFICATE', $missing);
@@ -156,7 +158,7 @@ final class KycFlowTest extends KycTestCase
 
         $this->completeDossier($organization);
 
-        $this->assertTrue($this->submissions->isComplete($organization->fresh()));
+        $this->assertTrue($this->submissions->isComplete((int) $organization->id));
     }
 
     public function test_a_compliance_officer_cannot_review_their_own_organisation(): void
@@ -169,14 +171,14 @@ final class KycFlowTest extends KycTestCase
 
         $this->completeDossier($ownOrganization);
         $ownOrganization->forceFill(['status' => OrganizationStatus::UNDER_REVIEW])->save();
-        $this->submissions->profileFor($ownOrganization)
+        $this->submissions->profileFor((int) $ownOrganization->id)
             ->forceFill(['status' => KycStatus::SUBMITTED])->save();
 
         foreach (['approve', 'reject', 'requestInfo', 'claim'] as $method) {
             try {
                 $method === 'claim'
-                    ? $this->reviews->claim($ownOrganization, $officer)
-                    : $this->reviews->{$method}($ownOrganization, $officer, 'یادداشت معتبر');
+                    ? $this->reviews->claim((int) $ownOrganization->id, (int) $officer->id)
+                    : $this->reviews->{$method}((int) $ownOrganization->id, (int) $officer->id, 'یادداشت معتبر');
 
                 $this->fail("{$method} on the officer's own organisation must be refused");
             } catch (OperationNotPermittedException $e) {
@@ -193,12 +195,12 @@ final class KycFlowTest extends KycTestCase
 
         $organization = Organization::factory()->create();
         $this->completeDossier($organization);
-        $this->submissions->submit($organization);
+        $this->submissions->submit((int) $organization->id);
 
         $notAnOfficer = $this->makeUser(Organization::factory()->platform()->create(), [RoleEnum::SUPPORT_AGENT]);
 
         try {
-            $this->reviews->approve($organization->fresh(), $notAnOfficer, 'تأیید');
+            $this->reviews->approve((int) $organization->id, (int) $notAnOfficer->id, 'تأیید');
             $this->fail('a support agent must not be able to approve KYC');
         } catch (OperationNotPermittedException $e) {
             $this->assertSame('missing_permission:platform.kyc.review', $e->reason);
@@ -211,21 +213,20 @@ final class KycFlowTest extends KycTestCase
 
         $organization = Organization::factory()->create();
         $this->completeDossier($organization);
-        $this->submissions->submit($organization);
-        $organization = $organization->fresh();
+        $this->submissions->submit((int) $organization->id);
 
         $officer = $this->makeComplianceOfficer();
 
         foreach (['approve', 'reject', 'requestInfo'] as $method) {
             try {
-                $this->reviews->{$method}($organization, $officer, '   ');
+                $this->reviews->{$method}((int) $organization->id, (int) $officer->id, '   ');
                 $this->fail("{$method} with a blank note must be refused");
             } catch (OperationNotPermittedException $e) {
                 $this->assertSame('kyc_decision_requires_a_written_note', $e->reason);
             }
         }
 
-        $this->assertSame(KycStatus::SUBMITTED, $this->submissions->profileFor($organization)->status);
+        $this->assertSame(KycStatus::SUBMITTED, $this->submissions->profileFor((int) $organization->id)->status);
     }
 
     public function test_rejection_is_final_for_both_dossier_and_member(): void
@@ -234,12 +235,11 @@ final class KycFlowTest extends KycTestCase
 
         $organization = Organization::factory()->create();
         $this->completeDossier($organization);
-        $this->submissions->submit($organization);
-        $organization = $organization->fresh();
+        $this->submissions->submit((int) $organization->id);
 
         $officer = $this->makeComplianceOfficer();
 
-        $profile = $this->reviews->reject($organization, $officer, 'مدارک جعلی است.');
+        $profile = $this->reviews->reject((int) $organization->id, (int) $officer->id, 'مدارک جعلی است.');
 
         $this->assertSame(KycStatus::REJECTED, $profile->status);
         $this->assertTrue($profile->status->isFinal());
@@ -261,11 +261,10 @@ final class KycFlowTest extends KycTestCase
 
         $organization = Organization::factory()->create();
         $this->completeDossier($organization);
-        $this->submissions->submit($organization);
-        $organization = $organization->fresh();
+        $this->submissions->submit((int) $organization->id);
 
         $officer = $this->makeComplianceOfficer();
-        $this->reviews->approve($organization, $officer, 'تأیید شد');
+        $this->reviews->approve((int) $organization->id, (int) $officer->id, 'تأیید شد');
 
         /** @var KycReview $review */
         $review = KycReview::query()->where('organization_id', $organization->id)->latest('id')->firstOrFail();
@@ -285,10 +284,10 @@ final class KycFlowTest extends KycTestCase
 
         $organization = Organization::factory()->create(['risk_level' => 'HIGH']);
         $this->completeDossier($organization);
-        $this->submissions->submit($organization);
+        $this->submissions->submit((int) $organization->id);
 
         $officer = $this->makeComplianceOfficer();
-        $profile = $this->reviews->approve($organization->fresh(), $officer, 'تأیید');
+        $profile = $this->reviews->approve((int) $organization->id, (int) $officer->id, 'تأیید');
 
         // HIGH risk is re-reviewed every 12 months (docs §1.6).
         $this->assertSame(

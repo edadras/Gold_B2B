@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Identity;
 
-use App\Modules\Identity\Application\PermissionChecker;
 use App\Modules\Identity\Application\OrganizationLifecycleService;
+use App\Modules\Identity\Application\PermissionChecker;
 use App\Modules\Identity\Contracts\IdentityDirectory;
 use App\Modules\Identity\Contracts\OrganizationLifecycle;
 use App\Modules\Identity\Domain\Permission;
