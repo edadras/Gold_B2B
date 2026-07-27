@@ -30,6 +30,7 @@ tags:
   - name: accounting
   - name: auth
   - name: balances
+  - name: broadcasting
   - name: counterparties
   - name: devices
   - name: disputes
@@ -56,6 +57,8 @@ tags:
   - name: vault
   - name: vaults
   - name: verify
+  - name: webhook-deliveries
+  - name: webhooks
 paths:
   /accounting/export:
     get:
@@ -640,6 +643,33 @@ paths:
       parameters:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Cursor'
+  /broadcasting/auth:
+    post:
+      tags:
+        - broadcasting
+      summary: 'Create broadcasting'
+      operationId: postBroadcastingAuth
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
   /counterparties:
     get:
       tags:
@@ -4420,6 +4450,249 @@ paths:
     parameters:
       -
         name: qr_token
+        in: path
+        required: true
+        schema:
+          type: string
+  '/webhook-deliveries/{delivery}/retry':
+    post:
+      tags:
+        - webhook-deliveries
+      summary: 'Retry — webhook-deliveries'
+      operationId: postWebhookDeliveriesDeliveryRetry
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: delivery
+        in: path
+        required: true
+        schema:
+          type: string
+  /webhooks:
+    get:
+      tags:
+        - webhooks
+      summary: 'Index — webhooks'
+      operationId: getWebhooks
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - webhooks
+      summary: 'Store — webhooks'
+      operationId: postWebhooks
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/webhooks/{webhook}':
+    put:
+      tags:
+        - webhooks
+      summary: 'Update — webhooks'
+      operationId: putWebhooksWebhook
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: webhook
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      tags:
+        - webhooks
+      summary: 'Destroy — webhooks'
+      operationId: deleteWebhooksWebhook
+      responses:
+        204:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/webhooks/{webhook}/deliveries':
+    get:
+      tags:
+        - webhooks
+      summary: 'Deliveries — webhooks'
+      operationId: getWebhooksWebhookDeliveries
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    parameters:
+      -
+        name: webhook
+        in: path
+        required: true
+        schema:
+          type: string
+  '/webhooks/{webhook}/rotate-secret':
+    post:
+      tags:
+        - webhooks
+      summary: 'Rotate Secret — webhooks'
+      operationId: postWebhooksWebhookRotateSecret
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: webhook
+        in: path
+        required: true
+        schema:
+          type: string
+  '/webhooks/{webhook}/test':
+    post:
+      tags:
+        - webhooks
+      summary: 'Test — webhooks'
+      operationId: postWebhooksWebhookTest
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: webhook
         in: path
         required: true
         schema:
