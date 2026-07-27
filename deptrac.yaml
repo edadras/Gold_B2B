@@ -1,0 +1,54 @@
+# Enforces the module dependency graph from docs/02-architecture/02-modules.md §2.2.
+# A violation here is an architecture regression, not a style nit: it means one
+# module reached into another's internals instead of going through Contracts or
+# a domain event.
+parameters:
+  paths:
+    - ./app/Modules
+  layers:
+    - name: Shared
+      collectors: [{ type: directory, value: app/Modules/Shared/.* }]
+    - name: Identity
+      collectors: [{ type: directory, value: app/Modules/Identity/.* }]
+    - name: Kyc
+      collectors: [{ type: directory, value: app/Modules/Kyc/.* }]
+    - name: Custody
+      collectors: [{ type: directory, value: app/Modules/Custody/.* }]
+    - name: Ledger
+      collectors: [{ type: directory, value: app/Modules/Ledger/.* }]
+    - name: Pricing
+      collectors: [{ type: directory, value: app/Modules/Pricing/.* }]
+    - name: Risk
+      collectors: [{ type: directory, value: app/Modules/Risk/.* }]
+    - name: Trading
+      collectors: [{ type: directory, value: app/Modules/Trading/.* }]
+    - name: Settlement
+      collectors: [{ type: directory, value: app/Modules/Settlement/.* }]
+    - name: Counterparty
+      collectors: [{ type: directory, value: app/Modules/Counterparty/.* }]
+    - name: Accounting
+      collectors: [{ type: directory, value: app/Modules/Accounting/.* }]
+    - name: Dispute
+      collectors: [{ type: directory, value: app/Modules/Dispute/.* }]
+    - name: Reputation
+      collectors: [{ type: directory, value: app/Modules/Reputation/.* }]
+    - name: Notification
+      collectors: [{ type: directory, value: app/Modules/Notification/.* }]
+    - name: Reporting
+      collectors: [{ type: directory, value: app/Modules/Reporting/.* }]
+  ruleset:
+    Shared: ~
+    Identity: [Shared]
+    Kyc: [Shared, Identity]
+    Custody: [Shared, Identity]
+    Ledger: [Shared, Identity, Custody]
+    Pricing: [Shared]
+    Risk: [Shared, Identity, Ledger, Pricing]
+    Trading: [Shared, Identity, Ledger, Risk, Pricing, Custody]
+    Settlement: [Shared, Identity, Ledger, Trading, Custody, Risk]
+    Counterparty: [Shared, Identity]
+    Accounting: [Shared, Identity, Ledger, Trading, Settlement]
+    Dispute: [Shared, Identity, Trading, Settlement, Ledger, Custody]
+    Reputation: [Shared, Identity]
+    Notification: [Shared, Identity]
+    Reporting: [Shared, Identity]
