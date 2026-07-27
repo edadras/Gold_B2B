@@ -119,9 +119,9 @@ final class AuthSession {
         accessToken: json.requireString('access_token'),
         refreshToken: json.stringOr('refresh_token', ''),
         expiresIn: json.intOr('expires_in', 900),
-        user: UserProfile.fromJson(json.mapOrNull('user') ?? const {}),
+        user: UserProfile.fromJson(json.mapOrNull('user') ?? const <String, dynamic>{}),
         organization: OrganizationSummary.fromJson(
-          json.mapOrNull('organization') ?? const {},
+          json.mapOrNull('organization') ?? const <String, dynamic>{},
         ),
       );
 }

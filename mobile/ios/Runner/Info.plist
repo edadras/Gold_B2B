@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>fa</string>
+	<key>CFBundleDisplayName</key>
+	<string>طلا B2B</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>gold_b2b</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>fa</string>
+	</array>
+
+	<!--
+	  Transport security.
+
+	  NSAllowsArbitraryLoads is absent, which is the point: ATS is fully on,
+	  so the app cannot be talked into a cleartext connection. There is
+	  deliberately no NSExceptionDomains entry for a local dev server —
+	  developers on iOS should point the dev flavour at an https:// tunnel
+	  rather than punch a hole that could survive into a release build.
+	-->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
+
+	<!-- Reasons shown by the OS when a permission is first requested. -->
+	<key>NSCameraUsageDescription</key>
+	<string>برای اسکن کد QR روی شمش و گواهی ری‌گیری، به دوربین نیاز است.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>برای تأیید عملیات مالی و باز کردن قفل برنامه، از تشخیص چهره استفاده می‌شود.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>برای پیوست کردن تصویر رسید پرداخت، به گالری تصاویر نیاز است.</string>
+
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+
+	<!-- Portrait only: financial figures are laid out for one column. -->
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+
+	<!--
+	  Deep link for QR verification is configured via Associated Domains
+	  (applinks:goldb2b.ir) in Runner.entitlements, NOT here. See
+	  mobile/README.md "Deep links".
+	-->
+</dict>
+</plist>

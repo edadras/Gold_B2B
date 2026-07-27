@@ -34,9 +34,15 @@ final readonly class SettlementCompletionService
      * Complete one settlement.
      *
      * @param  bool  $force  operator override, e.g. both parties waive the window
+     * @param  ?CarbonImmutable  $now  evaluate the window as at this moment; the sweep
+     *                                 passes its own clock so a replay stays deterministic
      */
-    public function complete(int $settlementId, ?int $actorUserId = null, bool $force = false): SettlementModel
-    {
+    public function complete(
+        int $settlementId,
+        ?int $actorUserId = null,
+        bool $force = false,
+        ?CarbonImmutable $now = null,
+    ): SettlementModel {
         $settlement = $this->stateMachine->lock($settlementId);
 
         if ($settlement->status !== SettlementStatus::SETTLED) {
@@ -45,7 +51,7 @@ final readonly class SettlementCompletionService
             );
         }
 
-        if (! $force && ! $this->windowHasClosed($settlement)) {
+        if (! $force && ! $this->windowHasClosed($settlement, $now)) {
             throw new OperationNotPermittedException(sprintf(
                 'The %d-hour objection window has not closed yet',
                 $this->windowHours(),
@@ -87,7 +93,8 @@ final readonly class SettlementCompletionService
      */
     public function completeDue(?CarbonImmutable $now = null, int $limit = 500): array
     {
-        $cutoff = ($now ?? CarbonImmutable::now())->subHours($this->windowHours());
+        $now ??= CarbonImmutable::now();
+        $cutoff = $now->subHours($this->windowHours());
 
         $ids = SettlementModel::query()
             ->where('status', SettlementStatus::SETTLED->value)
@@ -100,7 +107,7 @@ final readonly class SettlementCompletionService
         $completed = [];
 
         foreach ($ids as $id) {
-            $this->complete((int) $id);
+            $this->complete((int) $id, null, false, $now ?? CarbonImmutable::now());
             $completed[] = (int) $id;
         }
 

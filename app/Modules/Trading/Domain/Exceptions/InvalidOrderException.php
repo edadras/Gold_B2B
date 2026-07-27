@@ -14,7 +14,7 @@ final class InvalidOrderException extends DomainException
 {
     /** @param array<string, mixed> $context */
     private function __construct(
-        private readonly string $code,
+        private readonly string $errorCode,
         private readonly string $persianMessage,
         private readonly array $context,
         string $developerMessage,
@@ -104,7 +104,7 @@ final class InvalidOrderException extends DomainException
 
     public function errorCode(): string
     {
-        return $this->code;
+        return $this->errorCode;
     }
 
     public function userMessage(): string

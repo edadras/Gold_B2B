@@ -3,6 +3,11 @@ import 'package:gold_b2b/core/theme/app_colors.dart';
 import 'package:gold_b2b/core/theme/app_typography.dart';
 import 'package:gold_b2b/shared/models/status_tone.dart';
 
+// Re-exported so that a screen using StatusBadge gets StatusTone with it:
+// every call site needs both, and forcing two imports for one concept is
+// friction with no benefit.
+export 'package:gold_b2b/shared/models/status_tone.dart';
+
 /// Colours and glyphs for [StatusTone].
 ///
 /// Each feature maps its own status strings onto a tone, so the badge does not

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ backup/transfer rules.
+
+  Everything is excluded. The app's local state is a refresh token, a device
+  id and a small encrypted cache of balances; none of it should survive a
+  device transfer, and a refresh token that arrives on a new device via a
+  restore is a credential that was never authenticated on that device.
+
+  Signing in again on the new device is a few seconds of friction and is the
+  correct behaviour.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

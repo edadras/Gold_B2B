@@ -14,7 +14,6 @@ analyzer:
     invalid_assignment: error
     return_of_invalid_type: error
     unchecked_use_of_nullable_value: error
-    missing_return: error
     dead_code: warning
     # Warnings rather than errors: an unused import must not stop a build
     # while a feature is half-wired.

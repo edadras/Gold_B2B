@@ -7,6 +7,7 @@ import 'package:gold_b2b/core/theme/app_colors.dart';
 import 'package:gold_b2b/core/theme/app_typography.dart';
 import 'package:gold_b2b/features/settlements/application/settlements_controller.dart';
 import 'package:gold_b2b/features/settlements/data/models/settlement.dart';
+import 'package:gold_b2b/features/settlements/presentation/netting_screen.dart';
 import 'package:gold_b2b/shared/models/paginated.dart';
 import 'package:gold_b2b/shared/widgets/async_value_view.dart';
 import 'package:gold_b2b/shared/widgets/connectivity_banner.dart';

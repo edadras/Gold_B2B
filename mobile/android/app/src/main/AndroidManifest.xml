@@ -1,0 +1,92 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Network. No other permission is requested by default. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- QR scanning for lot authenticity verification (mobile_scanner). -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- Biometric confirmation of high-value operations (local_auth). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <!--
+      SECURITY POSTURE — see docs/02-architecture/04-security.md and
+      docs/07-mobile-flutter/01-architecture.md §1.10.
+
+      android:usesCleartextTraffic="false", together with the network security
+      config below, means the app CANNOT speak HTTP at all, even if a base URL
+      is misconfigured. A financial client that silently downgrades to
+      cleartext is worse than one that fails to connect.
+
+      android:allowBackup="false" and the extraction rules keep the encrypted
+      shared preferences — which hold the refresh token — out of adb backups
+      and out of Google's cloud backup.
+
+      FLAG_SECURE is NOT set here. It is applied per screen, at runtime, by
+      MainActivity's `secure_screen` MethodChannel, so that the QR
+      verification screen (which a user is meant to show to a counterparty)
+      stays screenshot-able while every balance screen does not.
+    -->
+    <application
+        android:label="طلا B2B"
+        android:name="${applicationName}"
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="false"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--
+              Deep link for QR verification. A bar's QR encodes
+              https://goldb2b.ir/verify/<token>, so scanning it with the system
+              camera opens this app straight on the verification screen when
+              installed, and the website otherwise.
+
+              autoVerify requires assetlinks.json to be served from
+              https://goldb2b.ir/.well-known/assetlinks.json.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="goldb2b.ir"
+                    android:pathPrefix="/verify/" />
+            </intent-filter>
+        </activity>
+
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain" />
+        </intent>
+    </queries>
+</manifest>
