@@ -1156,6 +1156,168 @@ paths:
           application/json:
             schema:
               type: object
+  '/disputes/{dispute}/messages':
+    post:
+      tags:
+        - disputes
+      summary: 'Post Message — disputes'
+      operationId: postDisputesDisputeMessages
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: dispute
+        in: path
+        required: true
+        schema:
+          type: string
+  '/disputes/{dispute}/proposals/{proposal}/accept':
+    post:
+      tags:
+        - disputes
+      summary: 'Accept Proposal — disputes'
+      operationId: postDisputesDisputeProposalsProposalAccept
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      description: 'Requires a re-signed transaction: send a current TOTP code in `X-Transaction-Signature`.'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TransactionSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: dispute
+        in: path
+        required: true
+        schema:
+          type: string
+      -
+        name: proposal
+        in: path
+        required: true
+        schema:
+          type: string
+  '/disputes/{dispute}/proposals/{proposal}/reject':
+    post:
+      tags:
+        - disputes
+      summary: 'Reject Proposal — disputes'
+      operationId: postDisputesDisputeProposalsProposalReject
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: dispute
+        in: path
+        required: true
+        schema:
+          type: string
+      -
+        name: proposal
+        in: path
+        required: true
+        schema:
+          type: string
+  '/disputes/{dispute}/propose-settlement':
+    post:
+      tags:
+        - disputes
+      summary: 'Propose Settlement — disputes'
+      operationId: postDisputesDisputeProposeSettlement
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: dispute
+        in: path
+        required: true
+        schema:
+          type: string
   '/disputes/{dispute}/reply':
     post:
       tags:

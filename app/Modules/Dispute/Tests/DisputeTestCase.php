@@ -7,10 +7,8 @@ namespace App\Modules\Dispute\Tests;
 use App\Modules\Dispute\Contracts\DisputeHoldPort;
 use App\Modules\Dispute\Contracts\TradeParties;
 use App\Modules\Dispute\Contracts\TradePartiesProvider;
-use App\Modules\Dispute\DisputeServiceProvider;
 use App\Modules\Dispute\Tests\Support\RecordingHoldPort;
 use App\Modules\Dispute\Tests\Support\StubTradePartiesProvider;
-use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

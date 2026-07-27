@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Dispute\Http\Controllers;
 
 use App\Modules\Dispute\Application\DisputeService;
+use App\Modules\Dispute\Application\NegotiationService;
 use App\Modules\Dispute\Contracts\OpenDisputeCommand;
 use App\Modules\Dispute\Http\Requests\AcceptClaimRequest;
 use App\Modules\Dispute\Http\Requests\DisputeReasonRequest;
 use App\Modules\Dispute\Http\Requests\OpenDisputeRequest;
+use App\Modules\Dispute\Http\Requests\PostDisputeMessageRequest;
+use App\Modules\Dispute\Http\Requests\ProposeSettlementRequest;
 use App\Modules\Dispute\Http\Requests\ReplyToDisputeRequest;
 use App\Modules\Dispute\Http\Resources\DisputeMessageResource;
 use App\Modules\Dispute\Http\Resources\DisputeResource;
@@ -41,6 +44,7 @@ final class DisputeController extends ApiController
     public function __construct(
         AuthorizationGateway $authorization,
         private readonly DisputeService $disputes,
+        private readonly NegotiationService $negotiation,
     ) {
         parent::__construct($authorization);
     }
@@ -127,6 +131,101 @@ final class DisputeController extends ApiController
         $updated = $this->disputes->acceptClaim($dispute, $this->userId($request), $request->message());
 
         return ApiResponse::item(new DisputeResource($updated, $organizationId));
+    }
+
+    /**
+     * Say something — §2.12 «پیام در مذاکره».
+     *
+     * The plainest action in the module and the one that was missing: without
+     * it a claimant could open a case and then never speak in it again, because
+     * `/reply` is specifically the respondent's rejection. Negotiation with one
+     * party unable to talk is not negotiation.
+     *
+     * No idempotency key. A duplicate message is visible, harmless and the
+     * member's own to delete-by-ignoring; a key here would buy nothing and
+     * would suppress somebody genuinely saying the same thing twice.
+     */
+    public function postMessage(PostDisputeMessageRequest $request, int $disputeId): JsonResponse
+    {
+        $organizationId = $this->permitWrite($request);
+        $dispute = $this->loadCase($disputeId, $organizationId);
+
+        $message = $this->negotiation->postMessage(
+            $dispute,
+            $organizationId,
+            $this->userId($request),
+            $request->body(),
+        );
+
+        return ApiResponse::item(new DisputeMessageResource($message, $organizationId), 201);
+    }
+
+    /**
+     * 🔑 Offer a settlement — §2.12 «پیشنهاد تسویه».
+     *
+     * Idempotent because the other side accepting one of these produces a
+     * binding verdict and moves gold and rial with no operator in the loop. A
+     * retried request that posted a second identical offer would leave two
+     * live offers on the case, either of which could be accepted.
+     *
+     * The amounts are unsigned and read from the sender's perspective — what
+     * they offer to hand over. NegotiationService restates that in the case's
+     * own frame on acceptance, so no client ever reasons about signs.
+     */
+    public function proposeSettlement(ProposeSettlementRequest $request, int $disputeId): JsonResponse
+    {
+        $organizationId = $this->permitWrite($request);
+        $dispute = $this->loadCase($disputeId, $organizationId);
+
+        $message = $this->negotiation->proposeSettlement(
+            $dispute,
+            $organizationId,
+            $this->userId($request),
+            $request->offeredGoldMg(),
+            $request->offeredRial(),
+            $request->body(),
+        );
+
+        return ApiResponse::item(new DisputeMessageResource($message, $organizationId), 201);
+    }
+
+    /**
+     * 🔑 Accept the other side's offer — the case ends in
+     * SETTLED_BY_AGREEMENT and the award moves.
+     *
+     * A party cannot accept its own proposal and a proposal cannot be answered
+     * twice; both rules live in NegotiationService, which owns them.
+     */
+    public function acceptProposal(Request $request, int $disputeId, int $proposalId): JsonResponse
+    {
+        $organizationId = $this->permitWrite($request);
+        $dispute = $this->loadCase($disputeId, $organizationId);
+
+        $updated = $this->negotiation->acceptProposal(
+            $dispute,
+            $proposalId,
+            $organizationId,
+            $this->userId($request),
+        );
+
+        return ApiResponse::item(new DisputeResource($updated, $organizationId));
+    }
+
+    /** Decline an offer. The case stays open and the room stays available. */
+    public function rejectProposal(DisputeReasonRequest $request, int $disputeId, int $proposalId): JsonResponse
+    {
+        $organizationId = $this->permitWrite($request);
+        $dispute = $this->loadCase($disputeId, $organizationId);
+
+        $message = $this->negotiation->rejectProposal(
+            $dispute,
+            $proposalId,
+            $organizationId,
+            $this->userId($request),
+            $request->reason(),
+        );
+
+        return ApiResponse::item(new DisputeMessageResource($message, $organizationId), 201);
     }
 
     /**

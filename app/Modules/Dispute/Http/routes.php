@@ -37,6 +37,27 @@ Route::middleware(['auth:sanctum', 'organization.active', 'throttle:api'])
             ->whereNumber('dispute')
             ->middleware(['transaction.sign', 'idempotency']);
 
+        // ── the negotiation room, §2.12 ──────────────────────────────────────
+        // Talking is free and unsigned; offering and accepting move money.
+
+        Route::post('disputes/{dispute}/messages', [DisputeController::class, 'postMessage'])
+            ->whereNumber('dispute');
+
+        Route::post('disputes/{dispute}/propose-settlement', [DisputeController::class, 'proposeSettlement'])
+            ->whereNumber('dispute')
+            ->middleware('idempotency');
+
+        // Accepting ends the case in SETTLED_BY_AGREEMENT and moves the award
+        // with no operator in the loop, so it is signed like /accept is.
+        Route::post('disputes/{dispute}/proposals/{proposal}/accept', [DisputeController::class, 'acceptProposal'])
+            ->whereNumber('dispute')
+            ->whereNumber('proposal')
+            ->middleware(['transaction.sign', 'idempotency']);
+
+        Route::post('disputes/{dispute}/proposals/{proposal}/reject', [DisputeController::class, 'rejectProposal'])
+            ->whereNumber('dispute')
+            ->whereNumber('proposal');
+
         Route::post('disputes/{dispute}/escalate', [DisputeController::class, 'escalate'])
             ->whereNumber('dispute');
 

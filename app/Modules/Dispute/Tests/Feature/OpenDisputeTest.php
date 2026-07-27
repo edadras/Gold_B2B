@@ -14,6 +14,7 @@ use App\Modules\Dispute\Tests\DisputeTestCase;
 use App\Modules\Shared\Exceptions\OperationNotPermittedException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -297,7 +298,7 @@ final class OpenDisputeTest extends DisputeTestCase
     #[Test]
     public function an_organisation_cannot_dispute_with_itself(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         new OpenDisputeCommand(
             type: DisputeType::AMOUNT_MISMATCH,

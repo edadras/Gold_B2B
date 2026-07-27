@@ -13,6 +13,7 @@ use App\Modules\Dispute\Domain\EvidenceType;
 use App\Modules\Dispute\Infrastructure\Models\DisputeModel;
 use App\Modules\Dispute\Tests\DisputeTestCase;
 use App\Modules\Shared\Exceptions\OperationNotPermittedException;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 
 final class EvidenceServiceTest extends DisputeTestCase
@@ -85,7 +86,7 @@ final class EvidenceServiceTest extends DisputeTestCase
     {
         $dispute = $this->openDispute();
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         $this->evidence->submit(
             $dispute,

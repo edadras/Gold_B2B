@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Dispute\Tests\Unit;
 
-use App\Modules\Dispute\Domain\DisputeDecision;
 use App\Modules\Dispute\Domain\DisputedAmountCalculator;
+use App\Modules\Dispute\Domain\DisputeDecision;
 use App\Modules\Dispute\Domain\DisputeParty;
 use App\Modules\Dispute\Domain\DisputeType;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -49,7 +50,7 @@ final class DisputedAmountCalculatorTest extends TestCase
     #[Test]
     public function a_claim_of_a_higher_purity_is_not_a_claim(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         DisputedAmountCalculator::forPurityClaim(500_000, 9_850, 9_950, 78_480_000);
     }
@@ -70,7 +71,7 @@ final class DisputedAmountCalculatorTest extends TestCase
     #[Test]
     public function a_weight_claim_alleging_more_gold_is_refused(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         DisputedAmountCalculator::forWeightClaim(250_000, 250_000, 78_480_000);
     }

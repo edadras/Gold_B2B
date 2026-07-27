@@ -16,9 +16,11 @@ use App\Modules\Dispute\Events\DisputeReputationAssessed;
 use App\Modules\Dispute\Events\DisputeResolved;
 use App\Modules\Dispute\Infrastructure\Models\DisputeModel;
 use App\Modules\Dispute\Tests\DisputeTestCase;
+use App\Modules\Shared\Exceptions\OperationNotPermittedException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -208,7 +210,7 @@ final class DisputeResolutionTest extends DisputeTestCase
         $dispute = $this->openPurityDispute();
         $this->disputes->escalateToMediation($dispute, 3);
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         $this->resolutions->decide(
             dispute: $dispute,
@@ -317,7 +319,7 @@ final class DisputeResolutionTest extends DisputeTestCase
             300_000_000,
         );
 
-        $this->expectException(\App\Modules\Shared\Exceptions\OperationNotPermittedException::class);
+        $this->expectException(OperationNotPermittedException::class);
 
         $negotiation->acceptProposal($dispute, (int) $proposal->id, self::RESPONDENT, 77);
     }
