@@ -16,8 +16,10 @@ analyzer:
     unchecked_use_of_nullable_value: error
     missing_return: error
     dead_code: warning
-    unused_import: error
-    unused_local_variable: error
+    # Warnings rather than errors: an unused import must not stop a build
+    # while a feature is half-wired.
+    unused_import: warning
+    unused_local_variable: warning
     todo: ignore
 
   exclude:

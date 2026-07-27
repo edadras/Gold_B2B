@@ -16,6 +16,7 @@ use App\Modules\Notification\Infrastructure\Channels\LogChannel;
 use App\Modules\Notification\Infrastructure\Notification;
 use App\Modules\Notification\Infrastructure\NotificationDelivery;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 
 /** Drivers sit behind one interface and are swapped through config. */
 final class ChannelDriverTest extends NotificationTestCase
@@ -167,6 +168,6 @@ final class ExplodingChannel implements NotificationChannel
 
     public function send(OutboundMessage $message): DeliveryOutcome
     {
-        throw new \RuntimeException('provider unreachable');
+        throw new RuntimeException('provider unreachable');
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Notification\Listeners;
 
-use App\Modules\Notification\Contracts\Notifier;
 use App\Modules\Notification\Contracts\NotificationSpec;
+use App\Modules\Notification\Contracts\Notifier;
 use App\Modules\Notification\Domain\NotificationCode;
 use Illuminate\Support\Facades\Log;
 

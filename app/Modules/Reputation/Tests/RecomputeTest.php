@@ -8,6 +8,7 @@ use App\Modules\Reputation\Application\RecomputeService;
 use App\Modules\Reputation\Contracts\CounterpartyCounter;
 use App\Modules\Reputation\Domain\VerificationTier;
 use App\Modules\Reputation\Infrastructure\RelationTableCounterpartyCounter;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -180,7 +181,7 @@ final class RecomputeTest extends ReputationTestCase
     #[Test]
     public function the_recompute_command_has_no_way_to_demote(): void
     {
-        $definition = $this->app->make(\Illuminate\Contracts\Console\Kernel::class)
+        $definition = $this->app->make(Kernel::class)
             ->all()['reputation:recompute']
             ->getDefinition();
 

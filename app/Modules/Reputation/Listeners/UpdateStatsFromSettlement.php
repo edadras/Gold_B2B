@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Reputation\Listeners;
 
 use App\Modules\Reputation\Application\StatsUpdater;
+use DateTimeInterface;
 use Illuminate\Support\Carbon;
 
 /**
@@ -125,7 +126,7 @@ final class UpdateStatsFromSettlement
 
     private function toString(mixed $value): string
     {
-        if ($value instanceof \DateTimeInterface) {
+        if ($value instanceof DateTimeInterface) {
             return $value->format('Y-m-d H:i:s');
         }
 

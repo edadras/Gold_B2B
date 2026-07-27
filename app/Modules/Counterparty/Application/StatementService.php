@@ -7,6 +7,7 @@ namespace App\Modules\Counterparty\Application;
 use App\Modules\Counterparty\Contracts\Statement;
 use App\Modules\Counterparty\Contracts\StatementLine;
 use DateTimeInterface;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use stdClass;
@@ -132,7 +133,7 @@ final class StatementService
     }
 
     /**
-     * @param  \Illuminate\Database\Query\Builder  $query
+     * @param  Builder  $query
      * @return array{gold_mg: int, rial: int}
      */
     private function sum($query): array
@@ -169,7 +170,7 @@ final class StatementService
             ->count();
     }
 
-    private function pairQuery(int $organizationId, int $counterpartyOrgId): \Illuminate\Database\Query\Builder
+    private function pairQuery(int $organizationId, int $counterpartyOrgId): Builder
     {
         return DB::table('counterparty_movements')
             ->where('organization_id', $organizationId)

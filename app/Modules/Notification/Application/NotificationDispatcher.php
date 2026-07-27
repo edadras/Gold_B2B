@@ -6,8 +6,8 @@ namespace App\Modules\Notification\Application;
 
 use App\Modules\Notification\Contracts\DeliveryOutcome;
 use App\Modules\Notification\Contracts\DispatchResult;
-use App\Modules\Notification\Contracts\Notifier;
 use App\Modules\Notification\Contracts\NotificationSpec;
+use App\Modules\Notification\Contracts\Notifier;
 use App\Modules\Notification\Contracts\OutboundMessage;
 use App\Modules\Notification\Contracts\Recipient;
 use App\Modules\Notification\Contracts\RecipientDirectory;
@@ -18,6 +18,7 @@ use App\Modules\Notification\Infrastructure\Notification;
 use App\Modules\Notification\Infrastructure\NotificationDelivery;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * The six dispatch rules of docs/03-domain/15-notification-reporting.md §15.4,
@@ -332,7 +333,7 @@ final class NotificationDispatcher implements Notifier
 
         try {
             $outcome = $this->channels->for($channel)->send($outbound);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $outcome = DeliveryOutcome::failed(mb_substr($e->getMessage(), 0, 500));
         }
 

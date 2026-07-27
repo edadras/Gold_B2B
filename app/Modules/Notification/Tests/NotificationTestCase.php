@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Notification\Tests;
 
+use App\Modules\Notification\Application\ChannelRegistry;
 use App\Modules\Notification\Application\NotificationDispatcher;
 use App\Modules\Notification\Application\PreferenceService;
 use App\Modules\Notification\Contracts\Recipient;
@@ -52,7 +53,7 @@ abstract class NotificationTestCase extends TestCase
         $this->dispatcher = new NotificationDispatcher(
             $this->directory,
             $this->preferences,
-            $this->app->make(\App\Modules\Notification\Application\ChannelRegistry::class),
+            $this->app->make(ChannelRegistry::class),
         );
     }
 
