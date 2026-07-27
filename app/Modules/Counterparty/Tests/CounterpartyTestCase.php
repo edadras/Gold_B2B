@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Counterparty\Tests;
 
 use App\Modules\Counterparty\Application\RelationService;
-use App\Modules\Counterparty\CounterpartyServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,7 +23,6 @@ abstract class CounterpartyTestCase extends TestCase
      * twice is a no-op, so this stays correct once the provider list includes
      * the module too.
      */
-
     protected function setUp(): void
     {
         parent::setUp();

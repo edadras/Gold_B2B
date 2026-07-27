@@ -7,6 +7,7 @@ namespace App\Modules\Shared\Http;
 use App\Modules\Shared\Contracts\AuthorizationGateway;
 use App\Modules\Shared\Exceptions\ForbiddenException;
 use Illuminate\Http\Request;
+use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -42,7 +43,7 @@ abstract class ApiController
         $user = $request->user();
 
         if ($user === null) {
-            throw new \RuntimeException('ApiController used on a route without auth:sanctum');
+            throw new RuntimeException('ApiController used on a route without auth:sanctum');
         }
 
         return (int) $user->getAuthIdentifier();
@@ -54,7 +55,7 @@ abstract class ApiController
         $user = $request->user();
 
         if ($user === null) {
-            throw new \RuntimeException('ApiController used on a route without auth:sanctum');
+            throw new RuntimeException('ApiController used on a route without auth:sanctum');
         }
 
         return (int) $user->getAttribute('organization_id');

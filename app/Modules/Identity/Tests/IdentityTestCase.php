@@ -6,11 +6,9 @@ namespace App\Modules\Identity\Tests;
 
 use App\Modules\Identity\Database\Seeders\RolesAndPermissionsSeeder;
 use App\Modules\Identity\Domain\Role as RoleEnum;
-use App\Modules\Identity\IdentityServiceProvider;
 use App\Modules\Identity\Infrastructure\Models\Organization;
 use App\Modules\Identity\Infrastructure\Models\Role;
 use App\Modules\Identity\Infrastructure\Models\User;
-use Illuminate\Contracts\Console\Kernel;
 use Tests\TestCase;
 
 /**
@@ -20,7 +18,6 @@ use Tests\TestCase;
  */
 abstract class IdentityTestCase extends TestCase
 {
-
     protected function seedRoles(): void
     {
         $this->seed(RolesAndPermissionsSeeder::class);

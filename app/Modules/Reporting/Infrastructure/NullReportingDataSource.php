@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Reporting\Infrastructure;
 
+use App\Modules\Reporting\Contracts\FeeRow;
 use App\Modules\Reporting\Contracts\FlowFacts;
+use App\Modules\Reporting\Contracts\InventoryRow;
 use App\Modules\Reporting\Contracts\PnlFacts;
 use App\Modules\Reporting\Contracts\ReportingDataSource;
+use App\Modules\Reporting\Contracts\TradeRow;
 use App\Modules\Reporting\Domain\DateRange;
 
 /**
@@ -43,7 +46,7 @@ final class NullReportingDataSource implements ReportingDataSource
         return 0;
     }
 
-    /** @return array<int, \App\Modules\Reporting\Contracts\TradeRow> */
+    /** @return array<int, TradeRow> */
     public function trades(int $organizationId, DateRange $range): array
     {
         return [];
@@ -54,13 +57,13 @@ final class NullReportingDataSource implements ReportingDataSource
         return PnlFacts::empty();
     }
 
-    /** @return array<int, \App\Modules\Reporting\Contracts\InventoryRow> */
+    /** @return array<int, InventoryRow> */
     public function inventory(int $organizationId): array
     {
         return [];
     }
 
-    /** @return array<int, \App\Modules\Reporting\Contracts\FeeRow> */
+    /** @return array<int, FeeRow> */
     public function fees(int $organizationId, DateRange $range): array
     {
         return [];

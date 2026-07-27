@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Shared\Audit;
 
+use DateTimeInterface;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -81,7 +82,7 @@ final class AuditRecorder
     private function hash(array $row, ?string $prevHash): string
     {
         $occurredAt = $row['occurred_at'];
-        $occurredAt = $occurredAt instanceof \DateTimeInterface
+        $occurredAt = $occurredAt instanceof DateTimeInterface
             ? $occurredAt->format('Y-m-d H:i:s.u')
             : (string) $occurredAt;
 

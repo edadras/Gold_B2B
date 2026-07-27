@@ -52,6 +52,7 @@ final readonly class Weight implements JsonSerializable, Stringable
     public static function fromMesghalString(string $input): self
     {
         $scaled = NumericInput::toScaledInt($input, 4); // mesghal x 10^4
+
         return new self(IntMath::mulDivFloor($scaled, self::MESGHAL_MG_X10, 100_000));
     }
 

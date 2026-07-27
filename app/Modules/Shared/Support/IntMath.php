@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Shared\Support;
 
 use App\Modules\Shared\Exceptions\ArithmeticOverflowException;
+use DivisionByZeroError;
 
 /**
  * Overflow-safe integer arithmetic for financial values.
@@ -28,7 +29,7 @@ final class IntMath
     public static function mulDivFloor(int $a, int $b, int $c): int
     {
         if ($c === 0) {
-            throw new \DivisionByZeroError('Division by zero in mulDivFloor');
+            throw new DivisionByZeroError('Division by zero in mulDivFloor');
         }
 
         $product = bcmul((string) $a, (string) $b, 0);
@@ -45,7 +46,7 @@ final class IntMath
     public static function mulDivCeil(int $a, int $b, int $c): int
     {
         if ($c === 0) {
-            throw new \DivisionByZeroError('Division by zero in mulDivCeil');
+            throw new DivisionByZeroError('Division by zero in mulDivCeil');
         }
 
         $product = bcmul((string) $a, (string) $b, 0);
@@ -62,7 +63,7 @@ final class IntMath
     public static function mulDivRemainder(int $a, int $b, int $c): int
     {
         if ($c === 0) {
-            throw new \DivisionByZeroError('Division by zero in mulDivRemainder');
+            throw new DivisionByZeroError('Division by zero in mulDivRemainder');
         }
 
         $product = bcmul((string) $a, (string) $b, 0);

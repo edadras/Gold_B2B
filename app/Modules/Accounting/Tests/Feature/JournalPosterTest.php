@@ -17,6 +17,7 @@ use App\Modules\Accounting\Domain\SourceType;
 use App\Modules\Accounting\Tests\AccountingTestCase;
 use App\Modules\Shared\Exceptions\UnbalancedTransactionException;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
@@ -235,7 +236,7 @@ final class JournalPosterTest extends AccountingTestCase
     #[Test]
     public function a_rial_line_may_not_carry_a_weight(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         new VoucherLine(
             account: AccountCode::PLATFORM_RIAL_BALANCE,
@@ -248,7 +249,7 @@ final class JournalPosterTest extends AccountingTestCase
     #[Test]
     public function a_gold_line_may_only_use_a_gold_bearing_account(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         VoucherLine::debitGold(AccountCode::PLATFORM_RIAL_BALANCE, 1_000);
     }

@@ -24,39 +24,57 @@ use Illuminate\Support\Facades\Log;
 final class NotifyOnDomainEvent
 {
     /**
-     * Event class name => catalogue code.
+     * Event class name => [catalogue code, property naming the RECIPIENT].
      *
-     * @var array<string, string>
+     * The recipient is declared per event rather than guessed from a list of
+     * likely property names, because on the events that name two organisations
+     * the likely-looking one is the wrong one. «پیشنهاد شما پذیرفته شد» belongs
+     * to the member who *quoted*, not the one who asked; a new OTC offer
+     * belongs to the counterparty, not the initiator who already knows. A
+     * blanket "first property that looks like an org id" rule sends both to the
+     * wrong member, and does it silently.
+     *
+     * A null recipient property means the event names a single organisation and
+     * the usual properties are searched.
+     *
+     * @var array<string, array{0: string, 1: ?string}>
      */
     private const MAP = [
-        'App\Modules\Trading\Events\OrderFilled' => 'ORDER_FILLED',
-        'App\Modules\Trading\Events\OrderPartiallyFilled' => 'ORDER_PARTIAL',
-        'App\Modules\Trading\Events\OrderRejected' => 'ORDER_REJECTED',
-        'App\Modules\Trading\Events\OtcOfferReceived' => 'OTC_OFFER_RECEIVED',
-        'App\Modules\Trading\Events\RfqQuoteAccepted' => 'RFQ_ACCEPTED',
-        'App\Modules\Settlement\Events\SettlementOpened' => 'SETTLEMENT_OPENED',
-        'App\Modules\Settlement\Events\PaymentRequired' => 'PAYMENT_REQUIRED',
-        'App\Modules\Settlement\Events\PaymentDeclared' => 'PAYMENT_DECLARED',
-        'App\Modules\Settlement\Events\SettlementCompleted' => 'SETTLEMENT_COMPLETED',
-        'App\Modules\Settlement\Events\SettlementOverdue' => 'SETTLEMENT_OVERDUE',
-        'App\Modules\Settlement\Events\SettlementDefaulted' => 'SETTLEMENT_DEFAULTED',
-        'App\Modules\Custody\Events\AssayVarianceDetected' => 'ASSAY_VARIANCE',
-        'App\Modules\Kyc\Events\KycApproved' => 'KYC_APPROVED',
-        'App\Modules\Dispute\Events\DisputeOpened' => 'DISPUTE_OPENED_AGAINST',
-        'App\Modules\Dispute\Events\DisputeResolved' => 'DISPUTE_RESOLVED',
+        'App\Modules\Trading\Events\OrderFilled' => ['ORDER_FILLED', null],
+        'App\Modules\Trading\Events\OrderPartiallyFilled' => ['ORDER_PARTIAL', null],
+        'App\Modules\Trading\Events\OrderRejected' => ['ORDER_REJECTED', null],
+        // The offer lands with the counterparty; the initiator sent it.
+        'App\Modules\Trading\Events\OtcOfferCreated' => ['OTC_OFFER_RECEIVED', 'counterpartyOrganizationId'],
+        // "Your quote was accepted" — the quoter is the one being told.
+        'App\Modules\Trading\Events\RfqAccepted' => ['RFQ_ACCEPTED', 'quoterOrganizationId'],
+        'App\Modules\Settlement\Events\SettlementOpened' => ['SETTLEMENT_OPENED', null],
+        // Only the side that owes cash is asked to pay.
+        'App\Modules\Settlement\Events\PaymentRequired' => ['PAYMENT_REQUIRED', 'cashPayerOrgId'],
+        'App\Modules\Settlement\Events\PaymentDeclared' => ['PAYMENT_DECLARED', null],
+        'App\Modules\Settlement\Events\SettlementCompleted' => ['SETTLEMENT_COMPLETED', null],
+        'App\Modules\Settlement\Events\SettlementOverdue' => ['SETTLEMENT_OVERDUE', null],
+        'App\Modules\Settlement\Events\SettlementDefaulted' => ['SETTLEMENT_DEFAULTED', null],
+        // Custody names this event for what happened to the assay, not for the
+        // variance it revealed; the fine weight moved and the owner must know.
+        'App\Modules\Custody\Events\AssayAdjusted' => ['ASSAY_VARIANCE', 'ownerOrganizationId'],
+        'App\Modules\Kyc\Events\KycApproved' => ['KYC_APPROVED', null],
+        'App\Modules\Dispute\Events\DisputeOpened' => ['DISPUTE_OPENED_AGAINST', null],
+        'App\Modules\Dispute\Events\DisputeResolved' => ['DISPUTE_RESOLVED', null],
     ];
 
     public function __construct(private readonly Notifier $notifier) {}
 
     public function handle(object $event): void
     {
-        $code = NotificationCode::tryFrom(self::MAP[$event::class] ?? '');
+        [$codeName, $recipientProperty] = self::MAP[$event::class] ?? [null, null];
+
+        $code = NotificationCode::tryFrom((string) $codeName);
 
         if ($code === null) {
             return;
         }
 
-        $organizationId = $this->organizationId($event);
+        $organizationId = $this->organizationId($event, $recipientProperty);
 
         if ($organizationId === null) {
             Log::debug('Notification ignored an event without an organisation', [
@@ -75,9 +93,22 @@ final class NotifyOnDomainEvent
         ));
     }
 
-    private function organizationId(object $event): ?int
+    /**
+     * Who is being told.
+     *
+     * A declared recipient wins outright and does NOT fall back to the generic
+     * search when it is missing: if the event was supposed to carry
+     * `quoterOrganizationId` and no longer does, guessing at `requesterOrgId`
+     * would send "your quote was accepted" to the member who did the accepting.
+     * Sending nothing is recoverable; sending it to the wrong member is not.
+     */
+    private function organizationId(object $event, ?string $recipientProperty): ?int
     {
-        foreach (['organizationId', 'orgId', 'buyerOrgId', 'ownerOrgId'] as $property) {
+        $properties = $recipientProperty !== null
+            ? [$recipientProperty]
+            : ['organizationId', 'orgId', 'buyerOrgId', 'ownerOrgId', 'ownerOrganizationId'];
+
+        foreach ($properties as $property) {
             if (property_exists($event, $property)) {
                 $value = (int) $event->{$property};
 

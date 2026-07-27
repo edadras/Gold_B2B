@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Accounting\Listeners;
 
 use DateTimeInterface;
+use JsonSerializable;
+use Throwable;
 
 /**
  * Defensive readers for events fired by modules this one must not import.
@@ -39,7 +41,7 @@ final class EventFacts
 
             // Value objects such as FineWeight expose their scalar through
             // jsonSerialize(); reading that is safe without importing the class.
-            if (is_object($value) && $value instanceof \JsonSerializable) {
+            if (is_object($value) && $value instanceof JsonSerializable) {
                 $serialized = $value->jsonSerialize();
 
                 if (is_int($serialized)) {
@@ -97,7 +99,7 @@ final class EventFacts
         try {
             /** @phpstan-ignore-next-line dynamic property read is the point of this class */
             return $event->{$name};
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // Uninitialised typed property, or a magic getter that threw.
             return null;
         }

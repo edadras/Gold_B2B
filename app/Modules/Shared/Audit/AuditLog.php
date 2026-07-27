@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Shared\Audit;
 
 use Illuminate\Database\Eloquent\Model;
+use LogicException;
 
 /**
  * Append-only audit record.
@@ -32,7 +33,7 @@ final class AuditLog extends Model
 
     protected static function booted(): void
     {
-        static::updating(static fn () => throw new \LogicException('audit_logs is append-only'));
-        static::deleting(static fn () => throw new \LogicException('audit_logs is append-only'));
+        self::updating(static fn () => throw new LogicException('audit_logs is append-only'));
+        self::deleting(static fn () => throw new LogicException('audit_logs is append-only'));
     }
 }

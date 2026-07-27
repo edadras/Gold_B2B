@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Shared\Http\Support;
 
 use App\Modules\Shared\Support\JalaliDate;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Illuminate\Http\Request;
@@ -86,7 +87,7 @@ final class Display
 
         return $at instanceof CarbonInterface
             ? $at->clone()->utc()->toIso8601ZuluString('millisecond')
-            : self::iso(\Carbon\CarbonImmutable::instance($at));
+            : self::iso(CarbonImmutable::instance($at));
     }
 
     /** "۱۴۰۵/۰۵/۰۵ ۱۲:۴۵:۳۳" in Tehran local time, which is what the user reads. */
@@ -98,7 +99,7 @@ final class Display
 
         $moment = $at instanceof CarbonInterface
             ? $at->clone()
-            : \Carbon\CarbonImmutable::parse(is_string($at) ? $at : $at->format(DateTimeInterface::ATOM));
+            : CarbonImmutable::parse(is_string($at) ? $at : $at->format(DateTimeInterface::ATOM));
 
         $local = $moment->setTimezone(config('goldb2b.market.timezone', 'Asia/Tehran'));
 

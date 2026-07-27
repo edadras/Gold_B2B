@@ -9,6 +9,7 @@ use App\Modules\Webhook\Domain\WebhookEventType;
 use Illuminate\Support\Facades\Log;
 use ReflectionObject;
 use ReflectionProperty;
+use Throwable;
 
 /**
  * The single bridge between the rest of the platform and the webhook catalogue.
@@ -101,7 +102,7 @@ final class DispatchWebhooksForDomainEvent
             }
 
             $this->dispatcher->dispatchToAll($type, $recipients, $this->data($properties));
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // A webhook is an integration convenience. It does not get to fail
             // the trade, the settlement or the ledger write that produced it.
             Log::error('Webhook dispatch failed for a domain event', [

@@ -6,6 +6,7 @@ namespace App\Modules\Webhook\Tests\Feature\Http;
 
 use App\Modules\Identity\Domain\Role as RoleEnum;
 use App\Modules\Identity\Infrastructure\Models\Organization;
+use App\Modules\Identity\Infrastructure\Models\User;
 use App\Modules\Webhook\Domain\DeliveryStatus;
 use App\Modules\Webhook\Domain\WebhookEventType;
 use App\Modules\Webhook\Domain\WebhookStatus;
@@ -365,7 +366,7 @@ final class WebhookEndpointsTest extends WebhookApiTestCase
         $this->postJson('/api/v1/webhooks', [])->assertUnauthorized();
     }
 
-    /** @return array{0: Organization, 1: \App\Modules\Identity\Infrastructure\Models\User} */
+    /** @return array{0: Organization, 1: User} */
     private function member(): array
     {
         $organization = $this->makeOrganization();

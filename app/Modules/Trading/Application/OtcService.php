@@ -16,9 +16,9 @@ use App\Modules\Shared\Exceptions\InvalidStateTransitionException;
 use App\Modules\Shared\ValueObjects\FineWeight;
 use App\Modules\Shared\ValueObjects\PricePerFineGram;
 use App\Modules\Trading\Application\Commands\CreateOtcOfferCommand;
+use App\Modules\Trading\Domain\DeliveryType;
 use App\Modules\Trading\Domain\Exceptions\OtcNegotiationException;
 use App\Modules\Trading\Domain\Exceptions\TradingEntityNotFoundException;
-use App\Modules\Trading\Domain\DeliveryType;
 use App\Modules\Trading\Domain\OtcOfferStatus;
 use App\Modules\Trading\Domain\TradeSource;
 use App\Modules\Trading\Events\OtcOfferAccepted;
@@ -386,7 +386,6 @@ final readonly class OtcService
 
         return $offer;
     }
-
 
     /**
      * Fold the print into Pricing's day statistics, after commit.

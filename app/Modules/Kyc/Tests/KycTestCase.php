@@ -7,7 +7,6 @@ namespace App\Modules\Kyc\Tests;
 use App\Modules\Identity\Database\Seeders\RolesAndPermissionsSeeder;
 use App\Modules\Identity\Domain\OrganizationType;
 use App\Modules\Identity\Domain\Role as RoleEnum;
-use App\Modules\Identity\IdentityServiceProvider;
 use App\Modules\Identity\Infrastructure\Models\Organization;
 use App\Modules\Identity\Infrastructure\Models\Role;
 use App\Modules\Identity\Infrastructure\Models\User;
@@ -18,8 +17,6 @@ use App\Modules\Kyc\Infrastructure\Models\BankAccount;
 use App\Modules\Kyc\Infrastructure\Models\BusinessLicense;
 use App\Modules\Kyc\Infrastructure\Models\Document;
 use App\Modules\Kyc\Infrastructure\Models\Signatory;
-use App\Modules\Kyc\KycServiceProvider;
-use Illuminate\Contracts\Console\Kernel;
 use Tests\TestCase;
 
 /**

@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
+use Throwable;
 
 /**
  * Stores KYC evidence according to the rules in
@@ -183,7 +184,7 @@ final class DocumentService
     {
         try {
             $url = $this->temporaryUrl($document, $minutes);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
 

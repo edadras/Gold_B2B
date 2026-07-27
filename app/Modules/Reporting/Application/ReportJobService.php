@@ -12,6 +12,7 @@ use App\Modules\Reporting\Domain\ReportFormat;
 use App\Modules\Reporting\Domain\ReportJobStatus;
 use App\Modules\Reporting\Domain\ReportType;
 use App\Modules\Reporting\Infrastructure\Models\ReportJobModel;
+use App\Modules\Shared\Exceptions\LimitExceededException;
 use App\Modules\Shared\Exceptions\OperationNotPermittedException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -56,7 +57,7 @@ final readonly class ReportJobService
      * A light one is produced immediately and its job row comes back COMPLETED.
      * A heavy one is recorded as QUEUED for a worker to pick up via run().
      *
-     * @throws \App\Modules\Shared\Exceptions\LimitExceededException when the range exceeds one year
+     * @throws LimitExceededException when the range exceeds one year
      */
     public function request(
         int $organizationId,

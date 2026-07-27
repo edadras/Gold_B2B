@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Webhook\Domain;
 
+use InvalidArgumentException;
+
 /**
  * The retry ladder of docs/05-api/03-realtime-webhooks.md §3.10, as pure logic.
  *
@@ -34,7 +36,7 @@ final class RetrySchedule
     public function __construct(private readonly array $delays = self::DEFAULT_DELAYS)
     {
         if ($this->delays === []) {
-            throw new \InvalidArgumentException('A retry ladder needs at least one rung.');
+            throw new InvalidArgumentException('A retry ladder needs at least one rung.');
         }
     }
 

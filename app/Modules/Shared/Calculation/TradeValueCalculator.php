@@ -33,7 +33,7 @@ final class TradeValueCalculator
         PricePerFineGram $price,
         FeeTerms $buyerFee,
         FeeTerms $sellerFee,
-        TaxTerms $tax = new TaxTerms(),
+        TaxTerms $tax = new TaxTerms,
     ): TradeValuation {
         $gross = $price->valueOf($fineWeight);
 
@@ -69,7 +69,7 @@ final class TradeValueCalculator
         PricePerFineGram $price,
         FeeTerms $buyerFee,
         FeeTerms $sellerFee,
-        TaxTerms $tax = new TaxTerms(),
+        TaxTerms $tax = new TaxTerms,
     ): TradeValuation {
         return $this->value(
             FineWeight::calculate($gross, $purity),
@@ -88,7 +88,7 @@ final class TradeValueCalculator
         FineWeight $quantity,
         PricePerFineGram $price,
         FeeTerms $buyerFee,
-        TaxTerms $tax = new TaxTerms(),
+        TaxTerms $tax = new TaxTerms,
     ): Rial {
         $gross = $price->valueOf($quantity);
         $fee = $buyerFee->applyTo($gross);

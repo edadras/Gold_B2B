@@ -7,6 +7,7 @@ namespace App\Modules\Settlement\Application;
 use App\Modules\Settlement\Application\Commands\OpenSettlementCommand;
 use App\Modules\Settlement\Domain\SettlementStatus;
 use App\Modules\Settlement\Domain\TransitionContext;
+use App\Modules\Settlement\Events\PaymentRequired;
 use App\Modules\Settlement\Events\SettlementOpened;
 use App\Modules\Settlement\Infrastructure\Models\SettlementModel;
 use Carbon\CarbonImmutable;
@@ -115,7 +116,24 @@ final readonly class OpenSettlementService
             new TransitionContext(actorUserId: $actorUserId, reason: 'Awaiting payment'),
         );
 
-        return $this->stateMachine->lock($settlementId);
+        $settlement = $this->stateMachine->lock($settlementId);
+
+        // "Opened" and "pay now" are two different facts: a settlement can be
+        // opened and then routed to the netting queue, where nobody is asked
+        // for anything. Only this one should reach a member's phone, and only
+        // the payer's.
+        event(new PaymentRequired(
+            settlementId: (int) $settlement->id,
+            settlementCode: (string) $settlement->settlement_code,
+            cashPayerOrgId: (int) $settlement->cash_payer_org_id,
+            cashReceiverOrgId: (int) $settlement->cash_receiver_org_id,
+            // F9 — the gross plus the buyer's fee is what actually leaves.
+            amountRial: (int) $settlement->cash_amount_rial + (int) $settlement->buyer_fee_rial,
+            deadlineAt: (string) $settlement->deadline_at,
+            occurredAt: CarbonImmutable::now()->toIso8601String(),
+        ));
+
+        return $settlement;
     }
 
     /** Open the settlement and put it straight into the payment queue. */

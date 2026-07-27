@@ -17,8 +17,8 @@ use JsonSerializable;
 final readonly class OrderBookSnapshot implements JsonSerializable
 {
     /**
-     * @param list<OrderBookLevel> $bids
-     * @param list<OrderBookLevel> $asks
+     * @param  list<OrderBookLevel>  $bids
+     * @param  list<OrderBookLevel>  $asks
      */
     public function __construct(
         public string $instrumentCode,

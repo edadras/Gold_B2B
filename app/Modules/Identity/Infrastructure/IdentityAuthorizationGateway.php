@@ -6,6 +6,7 @@ namespace App\Modules\Identity\Infrastructure;
 
 use App\Modules\Identity\Application\PermissionChecker;
 use App\Modules\Identity\Domain\Permission;
+use App\Modules\Identity\Domain\Role;
 use App\Modules\Identity\Infrastructure\Models\User;
 use App\Modules\Shared\Contracts\AuthorizationGateway;
 use App\Modules\Shared\Exceptions\ForbiddenException;
@@ -60,7 +61,7 @@ final class IdentityAuthorizationGateway implements AuthorizationGateway
         }
 
         return array_map(
-            static fn (\App\Modules\Identity\Domain\Role $role): string => $role->value,
+            static fn (Role $role): string => $role->value,
             $user->roleEnums(),
         );
     }

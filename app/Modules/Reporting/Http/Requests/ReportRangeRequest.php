@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Reporting\Http\Requests;
 
 use App\Modules\Reporting\Domain\DateRange;
+use App\Modules\Shared\Exceptions\LimitExceededException;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -33,7 +34,7 @@ final class ReportRangeRequest extends FormRequest
         ];
     }
 
-    /** @throws \App\Modules\Shared\Exceptions\LimitExceededException beyond 366 days */
+    /** @throws LimitExceededException beyond 366 days */
     public function range(): DateRange
     {
         return DateRange::of(

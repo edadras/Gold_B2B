@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Reporting\Application;
 
-use App\Modules\Reporting\Contracts\FlowFacts;
 use App\Modules\Reporting\Contracts\FlowReport;
 use App\Modules\Reporting\Contracts\ReportingDataSource;
 use App\Modules\Reporting\Domain\DateRange;

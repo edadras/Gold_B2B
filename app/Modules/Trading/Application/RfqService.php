@@ -428,7 +428,6 @@ final readonly class RfqService
         }, 3);
     }
 
-
     /**
      * Fold the print into Pricing's day statistics, after commit.
      *

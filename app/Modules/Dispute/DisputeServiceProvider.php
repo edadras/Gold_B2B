@@ -7,9 +7,9 @@ namespace App\Modules\Dispute;
 use App\Modules\Dispute\Console\ProcessDisputeDeadlinesCommand;
 use App\Modules\Dispute\Contracts\DisputeHoldPort;
 use App\Modules\Dispute\Contracts\TradePartiesProvider;
+use App\Modules\Dispute\Infrastructure\EloquentTradePartiesProvider;
 use App\Modules\Dispute\Infrastructure\Ledger\LedgerHoldAdapter;
 use App\Modules\Dispute\Infrastructure\Ledger\NullHoldAdapter;
-use App\Modules\Dispute\Infrastructure\NullTradePartiesProvider;
 use App\Modules\Ledger\Contracts\LedgerInterface;
 use App\Modules\Shared\Concerns\ModuleServiceProvider;
 
@@ -34,9 +34,12 @@ final class DisputeServiceProvider extends ModuleServiceProvider
     protected function bindings(): array
     {
         return [
-            // Refuses trade-linked disputes until Trading supplies a real one:
-            // "was this member party to the trade?" must not answer yes by default.
-            TradePartiesProvider::class => NullTradePartiesProvider::class,
+            // Reads Trading's tables to answer "was this member party to the
+            // trade?". It guards on Schema::hasTable, so a deployment without
+            // Trading degrades to the old Null behaviour — refusing every
+            // trade-linked dispute — which is the safe direction: "I don't
+            // know" must never be treated as "yes".
+            TradePartiesProvider::class => EloquentTradePartiesProvider::class,
         ];
     }
 

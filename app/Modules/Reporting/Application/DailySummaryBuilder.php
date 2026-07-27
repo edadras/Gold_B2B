@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Reporting\Application;
 
-use App\Modules\Reporting\Contracts\FlowFacts;
 use App\Modules\Reporting\Contracts\ReportingDataSource;
 use App\Modules\Reporting\Contracts\TradeRow;
 use App\Modules\Reporting\Domain\DateRange;
@@ -13,6 +12,7 @@ use App\Modules\Reporting\Infrastructure\Models\DailyPlatformSummaryModel;
 use App\Modules\Shared\Support\IntMath;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * The nightly rollup of §15.9.
@@ -164,7 +164,7 @@ final readonly class DailySummaryBuilder
                 if (! $row->is_reconciled) {
                     $unreconciled++;
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // One member's bad data must not stop every other member's
                 // summary from being built.
                 $failures[] = sprintf('org %d: %s', $organizationId, $e->getMessage());

@@ -52,10 +52,13 @@ final class AccountingServiceProvider extends ModuleServiceProvider
     protected function listeners(): array
     {
         return [
+            // TradeExecuted is the only trade event Trading emits; there is no
+            // separate "settled" one, and the settlement's own voucher is
+            // posted from SettlementCompleted below.
             'App\Modules\Trading\Events\TradeExecuted' => [PostTradeVoucher::class],
-            'App\Modules\Trading\Events\TradeSettled' => [PostTradeVoucher::class],
             'App\Modules\Settlement\Events\SettlementCompleted' => [PostSettlementVoucher::class],
-            'App\Modules\Settlement\Events\PenaltyCharged' => [PostPenaltyVoucher::class],
+            // A penalty is charged as part of defaulting; Settlement has no
+            // separate PenaltyCharged event to listen for.
             'App\Modules\Settlement\Events\SettlementDefaulted' => [PostPenaltyVoucher::class],
         ];
     }

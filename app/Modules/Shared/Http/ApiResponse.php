@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Shared\Http;
 
 use Illuminate\Http\JsonResponse;
+use JsonSerializable;
 
 /**
  * The single place API envelopes are built.
@@ -14,7 +15,7 @@ use Illuminate\Http\JsonResponse;
  */
 final class ApiResponse
 {
-    /** @param array<string, mixed>|\JsonSerializable $data */
+    /** @param array<string, mixed>|JsonSerializable $data */
     public static function item(mixed $data, int $status = 200, array $meta = []): JsonResponse
     {
         return response()->json([

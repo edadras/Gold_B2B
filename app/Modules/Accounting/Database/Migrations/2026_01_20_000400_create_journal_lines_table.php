@@ -61,7 +61,7 @@ return new class extends Migration
 
         // A RIAL line carries no weight; a GOLD line carries no money.
         DB::statement(
-            "ALTER TABLE journal_lines ADD CONSTRAINT chk_line_set_purity "
+            'ALTER TABLE journal_lines ADD CONSTRAINT chk_line_set_purity '
             ."CHECK ((line_set = 'RIAL' AND debit_fine_mg = 0 AND credit_fine_mg = 0) "
             ."OR (line_set = 'GOLD' AND debit_rial = 0 AND credit_rial = 0))"
         );

@@ -6,6 +6,8 @@ namespace App\Modules\Custody\Contracts;
 
 use App\Modules\Custody\Contracts\DTO\AllocationPlan;
 use App\Modules\Custody\Contracts\DTO\LotDeliveryResult;
+use App\Modules\Custody\Domain\Exceptions\CustodyEntityNotFoundException;
+use App\Modules\Custody\Domain\Exceptions\LotNotOwnedException;
 
 /**
  * The write side of custody, published.
@@ -42,8 +44,8 @@ interface LotDeliveryInterface
      *
      * @param  string  $referenceType  the caller's own reference vocabulary, e.g. 'settlement'
      *
-     * @throws \App\Modules\Custody\Domain\Exceptions\LotNotOwnedException if a planned lot is not the sender's
-     * @throws \App\Modules\Custody\Domain\Exceptions\CustodyEntityNotFoundException if a planned lot is gone
+     * @throws LotNotOwnedException if a planned lot is not the sender's
+     * @throws CustodyEntityNotFoundException if a planned lot is gone
      */
     public function deliver(
         AllocationPlan $plan,

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Accounting\Tests;
 
-use App\Modules\Accounting\AccountingServiceProvider;
-use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -28,5 +26,4 @@ use Tests\TestCase;
 abstract class AccountingTestCase extends TestCase
 {
     use RefreshDatabase;
-
 }

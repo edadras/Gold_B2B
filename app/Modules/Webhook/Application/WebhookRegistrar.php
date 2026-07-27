@@ -11,6 +11,7 @@ use App\Modules\Webhook\Domain\WebhookStatus;
 use App\Modules\Webhook\Infrastructure\Models\Webhook;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 /**
  * Registration, subscription changes, secret rotation and removal — §3.7 and
@@ -220,7 +221,7 @@ final class WebhookRegistrar
         }
 
         if ($valid === []) {
-            throw new \InvalidArgumentException('A webhook must subscribe to at least one known event type.');
+            throw new InvalidArgumentException('A webhook must subscribe to at least one known event type.');
         }
 
         return $valid;

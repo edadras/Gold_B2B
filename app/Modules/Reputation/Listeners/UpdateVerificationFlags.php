@@ -17,7 +17,14 @@ final class UpdateVerificationFlags
 {
     private const KYC_APPROVED = 'App\Modules\Kyc\Events\KycApproved';
 
-    private const BANK_VERIFIED = 'App\Modules\Identity\Events\BankAccountVerified';
+    /**
+     * Bank accounts live in Kyc, not Identity, and nothing verifies one yet:
+     * the column exists, the API reports it, no code writes it. Kept — and
+     * pointed at the right module — so that the day Kyc emits this, the flag
+     * starts moving with no change here. Deliberately NOT registered in
+     * ReputationServiceProvider, so it is not mistaken for live wiring.
+     */
+    private const BANK_VERIFIED = 'App\Modules\Kyc\Events\BankAccountVerified';
 
     public function __construct(private readonly StatsUpdater $stats) {}
 

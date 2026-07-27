@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Trading\Infrastructure\Models;
 
-use App\Modules\Trading\Domain\InstrumentStatus;
-use App\Modules\Trading\Domain\SettlementType;
 use App\Modules\Shared\ValueObjects\PricePerFineGram;
 use App\Modules\Shared\ValueObjects\Purity;
+use App\Modules\Trading\Domain\InstrumentStatus;
+use App\Modules\Trading\Domain\SettlementType;
 use Illuminate\Database\Eloquent\Model;
 
 /**

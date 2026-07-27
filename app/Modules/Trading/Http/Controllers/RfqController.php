@@ -15,6 +15,7 @@ use App\Modules\Trading\Application\InstrumentRepository;
 use App\Modules\Trading\Application\RfqService;
 use App\Modules\Trading\Application\TradingQueryService;
 use App\Modules\Trading\Domain\DeliveryType;
+use App\Modules\Trading\Domain\RfqStatus;
 use App\Modules\Trading\Domain\Side;
 use App\Modules\Trading\Http\Requests\AcceptRfqQuoteRequest;
 use App\Modules\Trading\Http\Requests\CreateRfqRequest;
@@ -126,7 +127,7 @@ final class RfqController extends ApiController
             throw $this->notFound();
         }
 
-        $rfq->status = \App\Modules\Trading\Domain\RfqStatus::CANCELLED;
+        $rfq->status = RfqStatus::CANCELLED;
         $rfq->closed_at = now();
         $rfq->save();
 

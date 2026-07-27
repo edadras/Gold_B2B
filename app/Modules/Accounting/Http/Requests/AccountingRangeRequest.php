@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Accounting\Http\Requests;
 
+use DateTimeImmutable;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -75,7 +76,7 @@ final class AccountingRangeRequest extends FormRequest
             return '9999-12-31';
         }
 
-        $ceiling = (new \DateTimeImmutable($from))->modify('+'.(self::MAX_DAYS - 1).' days');
+        $ceiling = (new DateTimeImmutable($from))->modify('+'.(self::MAX_DAYS - 1).' days');
 
         return $ceiling->format('Y-m-d');
     }

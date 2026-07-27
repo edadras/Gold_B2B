@@ -8,10 +8,12 @@ use App\Modules\Accounting\Application\PeriodCloseService;
 use App\Modules\Accounting\Application\PostingRules;
 use App\Modules\Accounting\Contracts\JournalPosterInterface;
 use App\Modules\Accounting\Contracts\PostingContext;
+use App\Modules\Accounting\Contracts\VoucherDraft;
 use App\Modules\Accounting\Domain\Exceptions\ClosedPeriodException;
 use App\Modules\Accounting\Domain\PostingRule;
 use App\Modules\Accounting\Domain\SourceType;
 use App\Modules\Accounting\Tests\AccountingTestCase;
+use App\Modules\Shared\Exceptions\OperationNotPermittedException;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -127,12 +129,12 @@ final class PeriodCloseServiceTest extends AccountingTestCase
     {
         $this->periods->open(self::ORG, '2025-12-01', '2025-12-31', '1404-09');
 
-        $this->expectException(\App\Modules\Shared\Exceptions\OperationNotPermittedException::class);
+        $this->expectException(OperationNotPermittedException::class);
 
         $this->periods->open(self::ORG, '2025-12-15', '2026-01-15', '1404-10');
     }
 
-    private function feeVoucher(int $sourceId, string $entryDate, int $amount = 1_000_000): \App\Modules\Accounting\Contracts\VoucherDraft
+    private function feeVoucher(int $sourceId, string $entryDate, int $amount = 1_000_000): VoucherDraft
     {
         return $this->rules->build(PostingRule::FEE, new PostingContext(
             organizationId: self::ORG,

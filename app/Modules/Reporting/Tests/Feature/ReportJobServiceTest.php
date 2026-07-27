@@ -15,7 +15,9 @@ use App\Modules\Reporting\Tests\ReportingTestCase;
 use App\Modules\Shared\Exceptions\LimitExceededException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\Test;
+use Throwable;
 
 /**
  * §15.8 — the inline/queued split, the one-year cap and the expiring link.
@@ -63,7 +65,7 @@ final class ReportJobServiceTest extends ReportingTestCase
     #[Test]
     public function a_backwards_range_is_refused(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         new DateRange('2026-02-01', '2026-01-01');
     }
@@ -301,7 +303,7 @@ final class ReportJobServiceTest extends ReportingTestCase
         try {
             $this->jobs->run($job);
             self::fail('the run should have failed');
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // expected
         }
 

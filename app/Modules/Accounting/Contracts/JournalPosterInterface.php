@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Accounting\Contracts;
 
+use App\Modules\Accounting\Domain\Exceptions\ClosedPeriodException;
 use App\Modules\Accounting\Domain\SourceType;
+use App\Modules\Shared\Exceptions\UnbalancedTransactionException;
 
 /**
  * The only supported way to write into the journal.
@@ -18,8 +20,8 @@ interface JournalPosterInterface
     /**
      * Post a voucher. Safe to call repeatedly for the same source.
      *
-     * @throws \App\Modules\Shared\Exceptions\UnbalancedTransactionException when a column does not balance
-     * @throws \App\Modules\Accounting\Domain\Exceptions\ClosedPeriodException when the entry date sits in a closed period
+     * @throws UnbalancedTransactionException when a column does not balance
+     * @throws ClosedPeriodException when the entry date sits in a closed period
      */
     public function post(VoucherDraft $draft): PostingResult;
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Webhook\Tests\Support;
 
+use stdClass;
+
 /**
  * A stand-in for a producing module's domain event.
  *
@@ -31,6 +33,6 @@ final class FakeTradeExecuted
         public ?string $makerSide,
         public string $executedAt,
         /** Must be skipped: an object in a webhook payload is a data leak. */
-        public object $internalContext = new \stdClass,
+        public object $internalContext = new stdClass,
     ) {}
 }

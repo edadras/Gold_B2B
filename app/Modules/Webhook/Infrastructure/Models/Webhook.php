@@ -9,6 +9,7 @@ use App\Modules\Webhook\Domain\WebhookStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * A member's registered endpoint.
@@ -25,8 +26,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property WebhookStatus $status
  * @property string|null $description
  * @property int $consecutive_failures
- * @property \Illuminate\Support\Carbon|null $failing_since
- * @property \Illuminate\Support\Carbon|null $disabled_at
+ * @property Carbon|null $failing_since
+ * @property Carbon|null $disabled_at
  */
 final class Webhook extends Model
 {

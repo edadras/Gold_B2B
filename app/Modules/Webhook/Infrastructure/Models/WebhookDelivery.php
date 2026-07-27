@@ -9,6 +9,7 @@ use App\Modules\Webhook\Domain\DeliveryStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * One event, one endpoint, up to seven attempts.
@@ -23,8 +24,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $response_code
  * @property int|null $response_time_ms
  * @property string|null $last_error
- * @property \Illuminate\Support\Carbon|null $next_retry_at
- * @property \Illuminate\Support\Carbon|null $delivered_at
+ * @property Carbon|null $next_retry_at
+ * @property Carbon|null $delivered_at
  */
 final class WebhookDelivery extends Model
 {

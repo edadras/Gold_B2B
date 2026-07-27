@@ -5,9 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Reporting\Tests;
 
 use App\Modules\Reporting\Contracts\ReportingDataSource;
-use App\Modules\Reporting\ReportingServiceProvider;
 use App\Modules\Reporting\Tests\Support\FakeReportingDataSource;
-use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 

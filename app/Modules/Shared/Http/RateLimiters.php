@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Shared\Http;
 
-use App\Modules\Shared\Http\ApiResponse;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 
@@ -56,7 +56,7 @@ final class RateLimiters
             : 'ip:'.$request->ip();
     }
 
-    private static function tooMany(): \Illuminate\Http\JsonResponse
+    private static function tooMany(): JsonResponse
     {
         return ApiResponse::error(
             'RATE_LIMIT_EXCEEDED',

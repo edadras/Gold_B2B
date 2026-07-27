@@ -8,6 +8,7 @@ use App\Modules\Shared\ValueObjects\FineWeight;
 use App\Modules\Shared\ValueObjects\PricePerFineGram;
 use App\Modules\Trading\Application\Commands\CreateOtcOfferCommand;
 use App\Modules\Trading\Application\OtcService;
+use App\Modules\Trading\Database\Seeders\InstrumentsSeeder;
 use App\Modules\Trading\Domain\MarketSessionStatus;
 use App\Modules\Trading\Domain\OrderStatus;
 use App\Modules\Trading\Domain\OtcOfferStatus;
@@ -47,7 +48,7 @@ final class ConsoleCommandsTest extends TradingTestCase
     public function the_instruments_seeder_creates_the_three_documented_instruments_once(): void
     {
         // setUpMarket already ran it; running it again must not duplicate.
-        $this->artisan('db:seed', ['--class' => \App\Modules\Trading\Database\Seeders\InstrumentsSeeder::class])
+        $this->artisan('db:seed', ['--class' => InstrumentsSeeder::class])
             ->assertSuccessful();
 
         $codes = Instrument::query()->orderBy('code')->pluck('code')->all();

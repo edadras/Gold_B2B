@@ -5,10 +5,18 @@ declare(strict_types=1);
 namespace App\Modules\Trading\Tests\Concurrency;
 
 use App\Modules\Ledger\Domain\Bucket;
+use App\Modules\Risk\Contracts\RiskGuardInterface;
 use App\Modules\Shared\Exceptions\InsufficientBalanceException;
+use App\Modules\Shared\ValueObjects\FineWeight;
+use App\Modules\Shared\ValueObjects\PricePerFineGram;
+use App\Modules\Trading\Application\Commands\PlaceOrderCommand;
+use App\Modules\Trading\Application\PlaceOrderService;
 use App\Modules\Trading\Domain\OrderStatus;
+use App\Modules\Trading\Domain\OrderType;
 use App\Modules\Trading\Domain\Side;
+use App\Modules\Trading\Domain\TimeInForce;
 use App\Modules\Trading\Infrastructure\Models\Order;
+use App\Modules\Trading\Tests\PermissiveRiskGuard;
 use App\Modules\Trading\Tests\TradingTestCase;
 use Closure;
 use Illuminate\Support\Facades\Artisan;
@@ -82,21 +90,21 @@ final class ConcurrentSellOrderTest extends TradingTestCase
                 // The risk guard is replaced inside the child, since the
                 // parent's container instance does not survive the fork.
                 app()->instance(
-                    \App\Modules\Risk\Contracts\RiskGuardInterface::class,
-                    new \App\Modules\Trading\Tests\PermissiveRiskGuard,
+                    RiskGuardInterface::class,
+                    new PermissiveRiskGuard,
                 );
 
-                app(\App\Modules\Trading\Application\PlaceOrderService::class)->place(
-                    new \App\Modules\Trading\Application\Commands\PlaceOrderCommand(
+                app(PlaceOrderService::class)->place(
+                    new PlaceOrderCommand(
                         organizationId: ConcurrentSellOrderTest::sellerOrg(),
                         userId: ConcurrentSellOrderTest::sellerUser(),
                         representativeId: null,
                         instrumentCode: ConcurrentSellOrderTest::instrumentCode(),
                         side: Side::SELL,
-                        type: \App\Modules\Trading\Domain\OrderType::LIMIT,
-                        timeInForce: \App\Modules\Trading\Domain\TimeInForce::DAY,
-                        quantity: \App\Modules\Shared\ValueObjects\FineWeight::fromMilligrams(80_000),
-                        price: \App\Modules\Shared\ValueObjects\PricePerFineGram::fromRial(78_480_000),
+                        type: OrderType::LIMIT,
+                        timeInForce: TimeInForce::DAY,
+                        quantity: FineWeight::fromMilligrams(80_000),
+                        price: PricePerFineGram::fromRial(78_480_000),
                     )
                 );
 

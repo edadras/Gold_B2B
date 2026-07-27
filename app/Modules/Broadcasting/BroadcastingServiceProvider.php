@@ -189,7 +189,7 @@ final class BroadcastingServiceProvider extends ModuleServiceProvider
             ],
 
             // --- Everything else that lights the bell ---------------------
-            'App\Modules\Custody\Events\AssayVarianceDetected' => [BroadcastNotification::class],
+            'App\Modules\Custody\Events\AssayAdjusted' => [BroadcastNotification::class],
             'App\Modules\Dispute\Events\DisputeOpened' => [BroadcastNotification::class],
             'App\Modules\Dispute\Events\DisputeResolved' => [BroadcastNotification::class],
             'App\Modules\Reputation\Events\TierPromoted' => [BroadcastNotification::class],

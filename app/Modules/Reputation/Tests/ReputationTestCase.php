@@ -6,7 +6,6 @@ namespace App\Modules\Reputation\Tests;
 
 use App\Modules\Reputation\Application\StatsUpdater;
 use App\Modules\Reputation\Domain\VerificationTier;
-use App\Modules\Reputation\ReputationServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -23,7 +22,6 @@ abstract class ReputationTestCase extends TestCase
      * setUpTraits(), which runs before any afterApplicationCreated callback, so
      * a provider registered later would contribute no migrations.
      */
-
     protected function setUp(): void
     {
         parent::setUp();

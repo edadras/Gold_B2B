@@ -11,7 +11,7 @@ use App\Modules\Settlement\Contracts\TradeReaderInterface;
 use App\Modules\Settlement\Domain\NettingCalculator;
 use App\Modules\Settlement\Infrastructure\CustodyLotMovementAdapter;
 use App\Modules\Settlement\Infrastructure\EloquentSettlementReader;
-use App\Modules\Settlement\Infrastructure\Null\NullTradeReader;
+use App\Modules\Settlement\Infrastructure\EloquentTradeReader;
 use App\Modules\Settlement\Listeners\OpenSettlementOnTradeExecuted;
 use App\Modules\Shared\Concerns\ModuleServiceProvider;
 
@@ -43,7 +43,7 @@ final class SettlementServiceProvider extends ModuleServiceProvider
     {
         return [
             SettlementReaderInterface::class => EloquentSettlementReader::class,
-            TradeReaderInterface::class => NullTradeReader::class,
+            TradeReaderInterface::class => EloquentTradeReader::class,
         ];
     }
 

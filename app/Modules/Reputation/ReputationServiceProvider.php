@@ -75,7 +75,14 @@ final class ReputationServiceProvider extends ModuleServiceProvider
             'App\Modules\Settlement\Events\SettlementDefaulted' => [UpdateStatsFromSettlement::class],
             'App\Modules\Dispute\Events\DisputeResolved' => [UpdateStatsFromDispute::class],
             'App\Modules\Kyc\Events\KycApproved' => [UpdateVerificationFlags::class],
-            'App\Modules\Identity\Events\BankAccountVerified' => [UpdateVerificationFlags::class],
+            // NOT registered: 'App\Modules\Kyc\Events\BankAccountVerified'.
+            // `kyc.bank_accounts.verified_at` exists and the API exposes it,
+            // but nothing in the platform ever writes it — bank-account
+            // verification is not implemented. A listener waiting on an event
+            // no module emits looks like working wiring and is not, so the
+            // registration is left out and the gap stated instead.
+            // UpdateVerificationFlags already handles the event by name and
+            // needs no change on the day Kyc grows the flow.
         ];
     }
 }

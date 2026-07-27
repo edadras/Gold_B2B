@@ -9,6 +9,7 @@ use App\Modules\Accounting\Application\EventPostingService;
 use App\Modules\Accounting\Tests\AccountingTestCase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
+use Throwable;
 
 /**
  * The half of idempotency that `uq_source` cannot cover on its own.
@@ -125,7 +126,7 @@ final class EventPostingServiceTest extends AccountingTestCase
                 entryDate: '2026-01-20',
             );
             self::fail('overselling should have been refused');
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // expected
         }
 

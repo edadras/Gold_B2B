@@ -7,6 +7,7 @@ namespace App\Modules\Trading\Tests\Feature;
 use App\Modules\Ledger\Domain\Bucket;
 use App\Modules\Shared\ValueObjects\FineWeight;
 use App\Modules\Trading\Application\Commands\PlaceOrderCommand;
+use App\Modules\Trading\Application\Results\OrderResult;
 use App\Modules\Trading\Domain\Exceptions\InvalidOrderException;
 use App\Modules\Trading\Domain\OrderStatus;
 use App\Modules\Trading\Domain\OrderType;
@@ -117,7 +118,7 @@ final class MarketOrderTest extends TradingTestCase
         $this->assertGreaterThan(0, $this->rialBalance(self::BUYER_ORG, Bucket::RESERVED));
     }
 
-    private function placeMarket(Side $side, int $quantityMg, int $slippageBps): \App\Modules\Trading\Application\Results\OrderResult
+    private function placeMarket(Side $side, int $quantityMg, int $slippageBps): OrderResult
     {
         return $this->orders()->place(new PlaceOrderCommand(
             organizationId: self::BUYER_ORG,

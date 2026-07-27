@@ -10,6 +10,8 @@ use App\Modules\Reputation\Contracts\PublicProfile;
 use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
+use ReflectionClass;
+use ReflectionProperty;
 use Tests\Api\ApiTestCase;
 
 /**
@@ -274,8 +276,8 @@ final class ReputationEndpointsTest extends ApiTestCase
         $response = $this->actingAsUser($user)->getJson('/api/v1/members/'.$theirs->id.'/reputation');
         $response->assertOk();
 
-        $reflection = new \ReflectionClass(PublicProfile::class);
-        $propertyCount = count($reflection->getProperties(\ReflectionProperty::IS_PUBLIC));
+        $reflection = new ReflectionClass(PublicProfile::class);
+        $propertyCount = count($reflection->getProperties(ReflectionProperty::IS_PUBLIC));
 
         self::assertSame($propertyCount, count($response->json('data')));
     }

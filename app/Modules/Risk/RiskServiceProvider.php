@@ -26,8 +26,8 @@ use App\Modules\Risk\Contracts\RiskGuardInterface;
 use App\Modules\Risk\Contracts\TradeHistoryReaderInterface;
 use App\Modules\Risk\Contracts\TradingExposureReaderInterface;
 use App\Modules\Risk\Domain\PenaltyCalculator;
+use App\Modules\Risk\Infrastructure\IdentityOrganizationStatusReader;
 use App\Modules\Risk\Infrastructure\NullMemberActivityReader;
-use App\Modules\Risk\Infrastructure\NullOrganizationStatusReader;
 use App\Modules\Risk\Infrastructure\NullTradeHistoryReader;
 use App\Modules\Risk\Infrastructure\NullTradingExposureReader;
 use App\Modules\Shared\Concerns\ModuleServiceProvider;
@@ -65,7 +65,11 @@ final class RiskServiceProvider extends ModuleServiceProvider
             // implementation is documented with why its answer is the safe one.
             TradeHistoryReaderInterface::class => NullTradeHistoryReader::class,
             TradingExposureReaderInterface::class => NullTradingExposureReader::class,
-            OrganizationStatusReaderInterface::class => NullOrganizationStatusReader::class,
+            // Identity exists, so the pre-trade gate's membership and licence
+            // checks read the real thing. The Null reader answered ACTIVE for
+            // everyone, which made §11.4 checks 2 and 3 pass for every member
+            // on the platform, suspended ones included.
+            OrganizationStatusReaderInterface::class => IdentityOrganizationStatusReader::class,
             MemberActivityReaderInterface::class => NullMemberActivityReader::class,
         ];
     }

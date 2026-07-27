@@ -6,6 +6,7 @@ namespace App\Modules\Trading\Http\Controllers;
 
 use App\Modules\Identity\Domain\Permission;
 use App\Modules\Shared\Contracts\AuthorizationGateway;
+use App\Modules\Shared\Exceptions\DomainException;
 use App\Modules\Shared\Http\ApiController;
 use App\Modules\Shared\Http\ApiResponse;
 use App\Modules\Shared\Http\Support\Cursor;
@@ -219,7 +220,7 @@ final class OrderController extends ApiController
             try {
                 $this->cancelOrders->cancel($id, $organizationId, $this->userId($request), 'cancel-all');
                 $cancelled[] = $id;
-            } catch (\App\Modules\Shared\Exceptions\DomainException $e) {
+            } catch (DomainException $e) {
                 // An order that filled between the listing and the cancel is
                 // not an error for the batch: report it and keep going.
                 $failed[] = ['order_id' => $id, 'code' => $e->errorCode()];
