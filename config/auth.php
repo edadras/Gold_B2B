@@ -62,7 +62,9 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            // The platform's user is the organisation-scoped Identity model,
+            // not the framework stub: logins are keyed on mobile number.
+            'model' => env('AUTH_MODEL', App\Modules\Identity\Infrastructure\Models\User::class),
         ],
 
         // 'users' => [

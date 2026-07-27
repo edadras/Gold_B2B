@@ -1,9 +1,3 @@
-import 'package:gold_b2b/shared/models/fine_weight.dart';
-import 'package:gold_b2b/shared/models/price_per_fine_gram.dart';
-import 'package:gold_b2b/shared/models/purity.dart';
-import 'package:gold_b2b/shared/models/rial.dart';
-import 'package:gold_b2b/shared/models/weight.dart';
-
 /// Client-side port of `App\Modules\Shared\Calculation`.
 ///
 /// WHY THIS EXISTS ON THE CLIENT AT ALL: the server is, and remains, the
@@ -20,6 +14,13 @@ import 'package:gold_b2b/shared/models/weight.dart';
 ///
 /// Formulas F1, F5, F8, F9, F10, F11 — docs/11-appendix/01-formulas.md.
 library;
+
+import 'package:gold_b2b/shared/models/fine_weight.dart';
+import 'package:gold_b2b/shared/models/price_per_fine_gram.dart';
+import 'package:gold_b2b/shared/models/purity.dart';
+import 'package:gold_b2b/shared/models/rial.dart';
+import 'package:gold_b2b/shared/models/weight.dart';
+
 
 /// Fee terms for one side of a trade, in hundred-thousandths (0.15% -> 150).
 final class FeeTerms {

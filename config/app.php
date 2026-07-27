@@ -107,6 +107,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Blind Index Key
+    |--------------------------------------------------------------------------
+    |
+    | HMAC key for the searchable hashes over encrypted identity columns
+    | (organizations.national_id_hash, bank_accounts.iban_hash, ...). It is
+    | deliberately separate from APP_KEY: a leaked blind index key lets an
+    | attacker test guesses, but never decrypt. Rotating it requires re-hashing
+    | every indexed column. See docs/02-architecture/04-security.md §4.4.
+    |
+    */
+
+    'blind_index_key' => env('BLIND_INDEX_KEY'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Maintenance Mode Driver
     |--------------------------------------------------------------------------
     |
