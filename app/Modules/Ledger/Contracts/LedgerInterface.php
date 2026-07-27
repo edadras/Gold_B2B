@@ -7,10 +7,13 @@ namespace App\Modules\Ledger\Contracts;
 use App\Modules\Ledger\Domain\AssetType;
 use App\Modules\Ledger\Domain\Bucket;
 use App\Modules\Ledger\Domain\EntryType;
+use App\Modules\Ledger\Domain\Exceptions\AlreadyReversedException;
+use App\Modules\Ledger\Domain\Exceptions\SelfTransferException;
 use App\Modules\Ledger\Domain\LedgerEntryId;
 use App\Modules\Ledger\Domain\LedgerReference;
 use App\Modules\Ledger\Domain\SystemAccountCode;
 use App\Modules\Ledger\Domain\TransactionGroup;
+use App\Modules\Shared\Exceptions\InsufficientBalanceException;
 use App\Modules\Shared\ValueObjects\FineWeight;
 use App\Modules\Shared\ValueObjects\Rial;
 
@@ -49,7 +52,7 @@ interface LedgerInterface
      * @return LedgerEntryId the credit leg landing in RESERVED, which callers
      *                       persist (orders.reservation_entry_id) and later hand to release()
      *
-     * @throws \App\Modules\Shared\Exceptions\InsufficientBalanceException
+     * @throws InsufficientBalanceException
      */
     public function reserve(int $orgId, FineWeight|Rial $amount, LedgerReference $ref): LedgerEntryId;
 
@@ -78,7 +81,7 @@ interface LedgerInterface
     /**
      * Move value from one organisation to another.
      *
-     * @throws \App\Modules\Ledger\Domain\Exceptions\SelfTransferException when the orgs are the same
+     * @throws SelfTransferException when the orgs are the same
      */
     public function transfer(
         int $fromOrgId,
@@ -120,7 +123,7 @@ interface LedgerInterface
      * Post the exact opposite of an existing entry and record the link row in
      * ledger_reversals. Four-eyes: requester and approver must differ.
      *
-     * @throws \App\Modules\Ledger\Domain\Exceptions\AlreadyReversedException
+     * @throws AlreadyReversedException
      */
     public function reverse(LedgerEntryId $entryId, string $reason, int $requestedBy, int $approvedBy): LedgerEntryId;
 

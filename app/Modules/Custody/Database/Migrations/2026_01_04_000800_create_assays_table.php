@@ -3,12 +3,11 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * assays — docs/04-data/02-schema-mysql.md §2.3.
+ * assays — transcribed from docs/04-data/02-schema-mysql.md §2.3.
  *
  * Certificates are never updated in place: a re-assay writes a new row and
  * flips the previous one to SUPERSEDED with superseded_by_id set.
@@ -17,39 +16,42 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('assays', function (Blueprint $table): void {
-            $table->bigIncrements('id');
-            $table->string('assay_code', 20);                 // AS-00004421
-            $table->unsignedBigInteger('gold_lot_id');
-            $table->string('certificate_no', 100);
-            $table->unsignedBigInteger('laboratory_id');
-            $table->enum('method', ['FIRE_ASSAY', 'XRF', 'ICP', 'OTHER']);
+        DB::statement(<<<'SQL'
+            CREATE TABLE assays (
+              id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              assay_code          VARCHAR(20) NOT NULL,
+              gold_lot_id         BIGINT UNSIGNED NOT NULL,
+              certificate_no      VARCHAR(100) NOT NULL,
+              laboratory_id       BIGINT UNSIGNED NOT NULL,
+              method              ENUM('FIRE_ASSAY','XRF','ICP','OTHER') NOT NULL,
 
-            $table->unsignedBigInteger('gross_weight_mg');
-            $table->unsignedSmallInteger('purity_x10');
-            $table->unsignedBigInteger('fine_weight_mg');
+              gross_weight_mg     BIGINT UNSIGNED NOT NULL,
+              purity_x10          SMALLINT UNSIGNED NOT NULL,
+              fine_weight_mg      BIGINT UNSIGNED NOT NULL,
 
-            $table->timestamp('assayed_at');
-            $table->timestamp('valid_until')->nullable();
-            $table->unsignedBigInteger('document_id')->nullable();
-            $table->char('qr_token', 64);
+              assayed_at          TIMESTAMP NOT NULL,
+              valid_until         TIMESTAMP NULL,
+              document_id         BIGINT UNSIGNED NULL,
+              qr_token            CHAR(64) NOT NULL,
 
-            $table->enum('status', ['VALID', 'SUPERSEDED', 'DISPUTED', 'REVOKED']);
-            $table->unsignedBigInteger('superseded_by_id')->nullable();
-            $table->timestamp('verified_by_lab_at')->nullable();
-            $table->unsignedBigInteger('recorded_by_user_id');
-            $table->timestamp('created_at')->useCurrent();
+              status              ENUM('VALID','SUPERSEDED','DISPUTED','REVOKED') NOT NULL,
+              superseded_by_id    BIGINT UNSIGNED NULL,
+              verified_by_lab_at  TIMESTAMP NULL,
+              recorded_by_user_id BIGINT UNSIGNED NOT NULL,
+              created_at          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-            $table->unique('assay_code', 'uq_assay_code');
-            $table->unique('qr_token', 'uq_qr_token');
-            $table->unique(['laboratory_id', 'certificate_no'], 'uq_lab_certificate');
-            $table->index(['gold_lot_id', 'status'], 'idx_lot');
-            $table->index('laboratory_id', 'idx_lab');
-        });
+              PRIMARY KEY (id),
+              UNIQUE KEY uq_assay_code (assay_code),
+              UNIQUE KEY uq_qr_token (qr_token),
+              UNIQUE KEY uq_lab_certificate (laboratory_id, certificate_no),
+              KEY idx_lot (gold_lot_id, status),
+              KEY idx_lab (laboratory_id),
 
-        DB::statement('ALTER TABLE assays ADD CONSTRAINT chk_assay_purity_range CHECK (purity_x10 <= 10000)');
-        DB::statement('ALTER TABLE assays ADD CONSTRAINT chk_assay_fine_le_gross CHECK (fine_weight_mg <= gross_weight_mg)');
-        DB::statement('ALTER TABLE assays ADD CONSTRAINT chk_assay_gross_positive CHECK (gross_weight_mg > 0)');
+              CONSTRAINT chk_assay_purity_range CHECK (purity_x10 <= 10000),
+              CONSTRAINT chk_assay_fine_le_gross CHECK (fine_weight_mg <= gross_weight_mg),
+              CONSTRAINT chk_assay_gross_positive CHECK (gross_weight_mg > 0)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            SQL);
     }
 
     public function down(): void

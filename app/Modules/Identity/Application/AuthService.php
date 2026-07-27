@@ -9,7 +9,6 @@ use App\Modules\Identity\Domain\Exceptions\InvalidCredentialsException;
 use App\Modules\Identity\Domain\Exceptions\InvalidTwoFactorCodeException;
 use App\Modules\Identity\Domain\Exceptions\TwoFactorRequiredException;
 use App\Modules\Identity\Domain\Totp;
-use App\Modules\Identity\Domain\UserStatus;
 use App\Modules\Identity\Domain\Validators\MobileNormalizer;
 use App\Modules\Identity\Infrastructure\Models\User;
 use App\Modules\Identity\Infrastructure\Models\UserDevice;

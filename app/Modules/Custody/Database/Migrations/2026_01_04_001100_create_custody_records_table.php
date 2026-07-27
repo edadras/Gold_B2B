@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -12,44 +12,49 @@ use Illuminate\Support\Facades\Schema;
  * Exactly one ACTIVE row per live lot; a movement closes the current row
  * (released_at) and opens a new one. This is what answers "who was holding
  * this piece of metal on date X" during a dispute.
- * docs/03-domain/06-custody-vault.md §6.2 / §6.4 step 9.
+ * docs/03-domain/06-custody-vault.md §6.2 and §6.4 step 9.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('custody_records', function (Blueprint $table): void {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('gold_lot_id');
+        DB::statement(<<<'SQL'
+            CREATE TABLE custody_records (
+              id                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              gold_lot_id            BIGINT UNSIGNED NOT NULL,
 
-            $table->enum('custodian_type', [
-                'VAULT', 'ORGANIZATION', 'LAB', 'IN_TRANSIT', 'THIRD_PARTY',
-            ]);
-            $table->unsignedBigInteger('custodian_id');
-            $table->unsignedBigInteger('vault_id')->nullable();
-            $table->unsignedBigInteger('vault_box_id')->nullable();
-            $table->string('physical_location', 50)->nullable();
+              custodian_type         ENUM('VAULT','ORGANIZATION','LAB','IN_TRANSIT',
+                                          'THIRD_PARTY') NOT NULL,
+              custodian_id           BIGINT UNSIGNED NOT NULL,
+              vault_id               BIGINT UNSIGNED NULL,
+              vault_box_id           BIGINT UNSIGNED NULL,
+              physical_location      VARCHAR(50) NULL,
 
-            $table->unsignedBigInteger('gross_weight_mg');
-            $table->unsignedBigInteger('fine_weight_mg');
+              gross_weight_mg        BIGINT UNSIGNED NOT NULL,
+              fine_weight_mg         BIGINT UNSIGNED NOT NULL,
 
-            $table->timestamp('received_at')->useCurrent();
-            $table->timestamp('released_at')->nullable();
-            $table->unsignedBigInteger('received_operation_id')->nullable();
-            $table->unsignedBigInteger('released_operation_id')->nullable();
-            $table->unsignedBigInteger('received_by_user_id')->nullable();
-            $table->unsignedBigInteger('released_by_user_id')->nullable();
+              received_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              released_at            TIMESTAMP NULL,
+              received_operation_id  BIGINT UNSIGNED NULL,
+              released_operation_id  BIGINT UNSIGNED NULL,
+              received_by_user_id    BIGINT UNSIGNED NULL,
+              released_by_user_id    BIGINT UNSIGNED NULL,
 
-            $table->enum('status', ['ACTIVE', 'CLOSED'])->default('ACTIVE');
-            $table->string('notes', 500)->nullable();
+              status                 ENUM('ACTIVE','CLOSED') NOT NULL DEFAULT 'ACTIVE',
+              notes                  VARCHAR(500) NULL,
 
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
+              created_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                       ON UPDATE CURRENT_TIMESTAMP,
 
-            $table->index(['gold_lot_id', 'status'], 'idx_custody_lot');
-            $table->index(['vault_id', 'status'], 'idx_custody_vault');
-            $table->index(['custodian_type', 'custodian_id'], 'idx_custody_holder');
-        });
+              PRIMARY KEY (id),
+              KEY idx_custody_lot (gold_lot_id, status),
+              KEY idx_custody_vault (vault_id, status),
+              KEY idx_custody_holder (custodian_type, custodian_id),
+
+              CONSTRAINT chk_custody_fine_le_gross CHECK (fine_weight_mg <= gross_weight_mg)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            SQL);
     }
 
     public function down(): void

@@ -6,6 +6,7 @@ namespace App\Modules\Pricing\Infrastructure\Models;
 
 use App\Modules\Pricing\Domain\AlertCondition;
 use App\Modules\Pricing\Domain\AlertStatus;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $window_seconds
  * @property bool $is_recurring
  * @property AlertStatus $status
- * @property \Carbon\CarbonImmutable|null $triggered_at
+ * @property CarbonImmutable|null $triggered_at
  */
 final class PriceAlert extends Model
 {

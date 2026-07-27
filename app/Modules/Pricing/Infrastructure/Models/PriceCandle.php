@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Pricing\Infrastructure\Models;
 
 use App\Modules\Pricing\Domain\CandleInterval;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property int $id
  * @property int $instrument_id
  * @property CandleInterval $interval_code
- * @property \Carbon\CarbonImmutable $opened_at
+ * @property CarbonImmutable $opened_at
  * @property int $open_price
  * @property int $high_price
  * @property int $low_price

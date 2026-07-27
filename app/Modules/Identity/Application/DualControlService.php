@@ -66,6 +66,8 @@ final class DualControlService
      */
     public function approve(int $requestId, int $checkerUserId, ?string $checkerNote = null): DualControlRequest
     {
+        $this->markExpiredIfDue($requestId);
+
         return DB::transaction(function () use ($requestId, $checkerUserId, $checkerNote): DualControlRequest {
             $request = $this->lockPending($requestId);
 
@@ -91,6 +93,8 @@ final class DualControlService
             throw new OperationNotPermittedException('rejection_requires_a_note');
         }
 
+        $this->markExpiredIfDue($requestId);
+
         return DB::transaction(function () use ($requestId, $checkerUserId, $checkerNote): DualControlRequest {
             $request = $this->lockPending($requestId);
 
@@ -113,6 +117,8 @@ final class DualControlService
     /** The maker may withdraw their own request; nobody else may. */
     public function cancel(int $requestId, int $makerUserId): DualControlRequest
     {
+        $this->markExpiredIfDue($requestId);
+
         return DB::transaction(function () use ($requestId, $makerUserId): DualControlRequest {
             $request = $this->lockPending($requestId);
 
@@ -148,20 +154,34 @@ final class DualControlService
         return hash('sha256', $action.'|'.json_encode($payload, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE));
     }
 
+    /**
+     * Flip a lapsed request to EXPIRED.
+     *
+     * Runs OUTSIDE the caller's transaction on purpose: the expiry throw would
+     * otherwise roll back the very row update it is reporting, and the request
+     * would sit at PENDING forever.
+     */
+    private function markExpiredIfDue(int $requestId): void
+    {
+        DualControlRequest::query()
+            ->whereKey($requestId)
+            ->where('status', DualControlStatus::PENDING->value)
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<', now())
+            ->update(['status' => DualControlStatus::EXPIRED->value]);
+    }
+
     private function lockPending(int $requestId): DualControlRequest
     {
         /** @var DualControlRequest $request */
         $request = DualControlRequest::query()->whereKey($requestId)->lockForUpdate()->firstOrFail();
 
-        if ($request->status !== DualControlStatus::PENDING) {
-            throw DualControlViolationException::alreadyDecided($request->status->value);
+        if ($request->status === DualControlStatus::EXPIRED) {
+            throw DualControlViolationException::expired();
         }
 
-        if ($request->isExpired()) {
-            $request->status = DualControlStatus::EXPIRED;
-            $request->save();
-
-            throw DualControlViolationException::expired();
+        if ($request->status !== DualControlStatus::PENDING) {
+            throw DualControlViolationException::alreadyDecided($request->status->value);
         }
 
         return $request;

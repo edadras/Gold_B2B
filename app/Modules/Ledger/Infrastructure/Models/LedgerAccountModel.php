@@ -82,7 +82,7 @@ final class LedgerAccountModel extends Model
     protected static function booted(): void
     {
         // account_key is STORED GENERATED — MariaDB rejects any attempt to write it.
-        static::saving(function (self $account): void {
+        self::saving(function (self $account): void {
             $account->offsetUnset('account_key');
         });
     }

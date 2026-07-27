@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /** Safes inside a vault — docs/03-domain/06-custody-vault.md §6.1. */
@@ -11,23 +11,27 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('vault_safes', function (Blueprint $table): void {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('vault_id');
-            $table->string('safe_code', 10);        // S03
-            $table->string('full_code', 50);        // V01-S03
-            $table->string('type', 50)->nullable();
-            $table->enum('security_level', ['LOW', 'MEDIUM', 'HIGH'])->default('HIGH');
-            $table->enum('status', ['ACTIVE', 'SEALED', 'DISABLED'])->default('ACTIVE');
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
+        DB::statement(<<<'SQL'
+            CREATE TABLE vault_safes (
+              id             BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              vault_id       BIGINT UNSIGNED NOT NULL,
+              safe_code      VARCHAR(10) NOT NULL,
+              full_code      VARCHAR(50) NOT NULL,
+              type           VARCHAR(50) NULL,
+              security_level ENUM('LOW','MEDIUM','HIGH') NOT NULL DEFAULT 'HIGH',
+              status         ENUM('ACTIVE','SEALED','DISABLED') NOT NULL DEFAULT 'ACTIVE',
+              created_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                               ON UPDATE CURRENT_TIMESTAMP,
 
-            $table->unique('full_code', 'uq_safe_full_code');
-            $table->unique(['vault_id', 'safe_code'], 'uq_safe_in_vault');
+              PRIMARY KEY (id),
+              UNIQUE KEY uq_safe_full_code (full_code),
+              UNIQUE KEY uq_safe_in_vault (vault_id, safe_code),
 
-            $table->foreign('vault_id', 'fk_safe_vault')
-                ->references('id')->on('vaults')->restrictOnDelete();
-        });
+              CONSTRAINT fk_safe_vault FOREIGN KEY (vault_id)
+                REFERENCES vaults (id) ON DELETE RESTRICT
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            SQL);
     }
 
     public function down(): void

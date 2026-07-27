@@ -3,51 +3,55 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
  * vault_waybills — the exit permit issued at step 7 of the withdrawal flow.
  * docs/03-domain/06-custody-vault.md §6.4.
  *
- * The one-time code is only ever stored hashed; the plaintext is returned once
- * to the caller so it can be sent to the owner's mobile.
+ * The one-time code is only ever stored as a SHA-256 hash; the plaintext is
+ * returned once to the caller so it can be sent to the owner's mobile.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('vault_waybills', function (Blueprint $table): void {
-            $table->bigIncrements('id');
-            $table->string('waybill_no', 30);
-            $table->unsignedBigInteger('custody_operation_id');
-            $table->unsignedBigInteger('vault_id');
-            $table->unsignedBigInteger('owner_organization_id');
-            $table->json('gold_lot_ids');
+        DB::statement(<<<'SQL'
+            CREATE TABLE vault_waybills (
+              id                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              waybill_no               VARCHAR(30) NOT NULL,
+              custody_operation_id     BIGINT UNSIGNED NOT NULL,
+              vault_id                 BIGINT UNSIGNED NOT NULL,
+              owner_organization_id    BIGINT UNSIGNED NOT NULL,
+              gold_lot_ids             JSON NOT NULL,
 
-            $table->string('receiver_name', 191)->nullable();
-            $table->char('receiver_national_id_hash', 64)->nullable();
+              receiver_name            VARCHAR(191) NULL,
+              receiver_national_id_hash CHAR(64) NULL,
 
-            $table->char('one_time_code_hash', 64);
-            $table->timestamp('code_expires_at');
-            $table->timestamp('code_used_at')->nullable();
-            $table->unsignedTinyInteger('code_attempts')->default(0);
-            $table->char('qr_token', 64);
+              one_time_code_hash       CHAR(64) NOT NULL,
+              code_expires_at          TIMESTAMP NOT NULL,
+              code_used_at             TIMESTAMP NULL,
+              code_attempts            TINYINT UNSIGNED NOT NULL DEFAULT 0,
+              qr_token                 CHAR(64) NOT NULL,
 
-            $table->enum('status', ['ISSUED', 'USED', 'EXPIRED', 'CANCELLED'])
-                ->default('ISSUED');
+              status                   ENUM('ISSUED','USED','EXPIRED','CANCELLED')
+                                         NOT NULL DEFAULT 'ISSUED',
 
-            $table->unsignedBigInteger('issued_by_user_id');
-            $table->timestamp('issued_at')->useCurrent();
+              issued_by_user_id        BIGINT UNSIGNED NOT NULL,
+              issued_at                TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
+              created_at               TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at               TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                         ON UPDATE CURRENT_TIMESTAMP,
 
-            $table->unique('waybill_no', 'uq_waybill_no');
-            $table->unique('custody_operation_id', 'uq_waybill_operation');
-            $table->unique('qr_token', 'uq_waybill_qr');
-            $table->index(['vault_id', 'status'], 'idx_waybill_vault');
-        });
+              PRIMARY KEY (id),
+              UNIQUE KEY uq_waybill_no (waybill_no),
+              UNIQUE KEY uq_waybill_operation (custody_operation_id),
+              UNIQUE KEY uq_waybill_qr (qr_token),
+              KEY idx_waybill_vault (vault_id, status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            SQL);
     }
 
     public function down(): void

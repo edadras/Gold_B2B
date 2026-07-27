@@ -3,54 +3,64 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
  * vault_audits — physical reconciliation runs.
  * docs/03-domain/06-custody-vault.md §6.6.
+ *
+ * The per-line detail lives in the variances JSON column; the counters exist
+ * so the vault dashboard does not have to parse it.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('vault_audits', function (Blueprint $table): void {
-            $table->bigIncrements('id');
-            $table->string('audit_code', 20);
-            $table->unsignedBigInteger('vault_id');
-            $table->enum('status', ['IN_PROGRESS', 'COMPLETED', 'ESCALATED'])
-                ->default('IN_PROGRESS');
+        DB::statement(<<<'SQL'
+            CREATE TABLE vault_audits (
+              id                     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              audit_code             VARCHAR(20) NOT NULL,
+              vault_id               BIGINT UNSIGNED NOT NULL,
+              status                 ENUM('IN_PROGRESS','COMPLETED','ESCALATED')
+                                       NOT NULL DEFAULT 'IN_PROGRESS',
 
-            $table->timestamp('started_at')->useCurrent();
-            $table->timestamp('completed_at')->nullable();
+              started_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              completed_at           TIMESTAMP NULL,
 
-            $table->unsignedInteger('expected_lot_count')->default(0);
-            $table->unsignedBigInteger('expected_gross_mg')->default(0);
-            $table->unsignedBigInteger('expected_fine_mg')->default(0);
-            $table->unsignedInteger('counted_lot_count')->default(0);
-            $table->unsignedBigInteger('counted_gross_mg')->default(0);
+              expected_lot_count     INT UNSIGNED NOT NULL DEFAULT 0,
+              expected_gross_mg      BIGINT UNSIGNED NOT NULL DEFAULT 0,
+              expected_fine_mg       BIGINT UNSIGNED NOT NULL DEFAULT 0,
+              counted_lot_count      INT UNSIGNED NOT NULL DEFAULT 0,
+              counted_gross_mg       BIGINT UNSIGNED NOT NULL DEFAULT 0,
 
-            $table->unsignedInteger('matched_count')->default(0);
-            $table->unsignedInteger('within_tolerance_count')->default(0);
-            $table->unsignedInteger('review_count')->default(0);
-            $table->unsignedInteger('investigation_count')->default(0);
-            $table->unsignedInteger('missing_count')->default(0);
-            $table->unsignedInteger('unknown_count')->default(0);
+              matched_count          INT UNSIGNED NOT NULL DEFAULT 0,
+              within_tolerance_count INT UNSIGNED NOT NULL DEFAULT 0,
+              review_count           INT UNSIGNED NOT NULL DEFAULT 0,
+              investigation_count    INT UNSIGNED NOT NULL DEFAULT 0,
+              missing_count          INT UNSIGNED NOT NULL DEFAULT 0,
+              unknown_count          INT UNSIGNED NOT NULL DEFAULT 0,
 
-            $table->json('variances')->nullable();
-            $table->boolean('requires_investigation')->default(false);
-            $table->boolean('vault_frozen')->default(false);
+              variances              JSON NULL,
+              requires_investigation TINYINT(1) NOT NULL DEFAULT 0,
+              vault_frozen           TINYINT(1) NOT NULL DEFAULT 0,
 
-            $table->unsignedBigInteger('auditor_user_id');
-            $table->unsignedBigInteger('approved_by_user_id')->nullable();
-            $table->text('notes')->nullable();
+              auditor_user_id        BIGINT UNSIGNED NOT NULL,
+              approved_by_user_id    BIGINT UNSIGNED NULL,
+              notes                  TEXT NULL,
 
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
+              created_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at             TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                       ON UPDATE CURRENT_TIMESTAMP,
 
-            $table->unique('audit_code', 'uq_audit_code');
-            $table->index(['vault_id', 'started_at'], 'idx_audit_vault');
-        });
+              PRIMARY KEY (id),
+              UNIQUE KEY uq_audit_code (audit_code),
+              KEY idx_audit_vault (vault_id, started_at),
+
+              CONSTRAINT chk_audit_counter_differs
+                CHECK (approved_by_user_id IS NULL OR approved_by_user_id <> auditor_user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            SQL);
     }
 
     public function down(): void

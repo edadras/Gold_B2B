@@ -23,8 +23,10 @@ abstract class IdentityTestCase extends TestCase
 {
     public function createApplication(): Application
     {
+        // base_path() is unavailable until the container has an application
+        // bound, so the path is resolved relative to this file.
         /** @var Application $app */
-        $app = require base_path('bootstrap/app.php');
+        $app = require dirname(__DIR__, 4).'/bootstrap/app.php';
         $app->make(Kernel::class)->bootstrap();
 
         // Idempotent: returns the existing instance if already registered.

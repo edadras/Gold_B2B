@@ -1,0 +1,75 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Reputation;
+
+use App\Modules\Reputation\Application\PublicProfileService;
+use App\Modules\Reputation\Application\RecomputeService;
+use App\Modules\Reputation\Application\StatsUpdater;
+use App\Modules\Reputation\Application\TierEvaluator;
+use App\Modules\Reputation\Console\RecomputeReputationCommand;
+use App\Modules\Reputation\Contracts\CounterpartyCounter;
+use App\Modules\Reputation\Contracts\ReputationDirectory;
+use App\Modules\Reputation\Infrastructure\RelationTableCounterpartyCounter;
+use App\Modules\Reputation\Listeners\UpdateStatsFromDispute;
+use App\Modules\Reputation\Listeners\UpdateStatsFromSettlement;
+use App\Modules\Reputation\Listeners\UpdateVerificationFlags;
+use App\Modules\Shared\Concerns\ModuleServiceProvider;
+
+final class ReputationServiceProvider extends ModuleServiceProvider
+{
+    protected function modulePath(): string
+    {
+        return __DIR__;
+    }
+
+    public function register(): void
+    {
+        $this->mergeConfigFrom(__DIR__.'/Config/reputation.php', 'goldb2b.reputation');
+
+        parent::register();
+
+        $this->app->singleton(StatsUpdater::class);
+        $this->app->singleton(TierEvaluator::class);
+        $this->app->singleton(PublicProfileService::class);
+        $this->app->singleton(RecomputeService::class);
+    }
+
+    /** @return array<class-string, class-string> */
+    protected function bindings(): array
+    {
+        return [
+            ReputationDirectory::class => PublicProfileService::class,
+            // Swap this binding to move `distinct_counterparties` onto a
+            // Counterparty API call without touching the recompute job.
+            CounterpartyCounter::class => RelationTableCounterpartyCounter::class,
+        ];
+    }
+
+    /** @return array<class-string> */
+    protected function consoleCommands(): array
+    {
+        return [
+            RecomputeReputationCommand::class,
+        ];
+    }
+
+    /**
+     * Statistics arrive from modules this one may not depend on, so the events
+     * are named as strings and each listener validates the payload's shape
+     * before touching a counter.
+     *
+     * @return array<class-string|string, array<class-string>>
+     */
+    protected function listeners(): array
+    {
+        return [
+            'App\Modules\Settlement\Events\SettlementCompleted' => [UpdateStatsFromSettlement::class],
+            'App\Modules\Settlement\Events\SettlementDefaulted' => [UpdateStatsFromSettlement::class],
+            'App\Modules\Dispute\Events\DisputeResolved' => [UpdateStatsFromDispute::class],
+            'App\Modules\Kyc\Events\KycApproved' => [UpdateVerificationFlags::class],
+            'App\Modules\Identity\Events\BankAccountVerified' => [UpdateVerificationFlags::class],
+        ];
+    }
+}

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Identity\Infrastructure\Models;
 
+use App\Modules\Identity\Database\Factories\OrganizationFactory;
 use App\Modules\Identity\Domain\BlindIndex;
 use App\Modules\Identity\Domain\ComplianceState;
 use App\Modules\Identity\Domain\OrganizationStatus;
@@ -32,7 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Organization extends Model
 {
-    /** @use HasFactory<\App\Modules\Identity\Database\Factories\OrganizationFactory> */
+    /** @use HasFactory<OrganizationFactory> */
     use HasFactory;
 
     protected $table = 'organizations';
@@ -64,9 +65,9 @@ class Organization extends Model
         ];
     }
 
-    protected static function newFactory(): \App\Modules\Identity\Database\Factories\OrganizationFactory
+    protected static function newFactory(): OrganizationFactory
     {
-        return \App\Modules\Identity\Database\Factories\OrganizationFactory::new();
+        return OrganizationFactory::new();
     }
 
     /** @return HasMany<User, $this> */

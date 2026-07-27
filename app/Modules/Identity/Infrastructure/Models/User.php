@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Identity\Infrastructure\Models;
 
+use App\Modules\Identity\Database\Factories\UserFactory;
 use App\Modules\Identity\Domain\BlindIndex;
 use App\Modules\Identity\Domain\Permission;
 use App\Modules\Identity\Domain\Role as RoleEnum;
@@ -33,7 +34,7 @@ use Laravel\Sanctum\HasApiTokens;
  */
 class User extends Authenticatable
 {
-    /** @use HasFactory<\App\Modules\Identity\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory;
 
     protected $table = 'users';
@@ -68,9 +69,9 @@ class User extends Authenticatable
         ];
     }
 
-    protected static function newFactory(): \App\Modules\Identity\Database\Factories\UserFactory
+    protected static function newFactory(): UserFactory
     {
-        return \App\Modules\Identity\Database\Factories\UserFactory::new();
+        return UserFactory::new();
     }
 
     public function getAuthPassword(): string

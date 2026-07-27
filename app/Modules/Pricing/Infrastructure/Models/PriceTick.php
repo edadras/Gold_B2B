@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Pricing\Infrastructure\Models;
 
 use App\Modules\Pricing\Domain\PriceType;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,8 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property PriceType $price_type
  * @property int $value
  * @property int $scale
- * @property \Carbon\CarbonImmutable $observed_at
- * @property \Carbon\CarbonImmutable $received_at
+ * @property CarbonImmutable $observed_at
+ * @property CarbonImmutable $received_at
  * @property bool $is_accepted
  * @property string|null $rejection_reason
  * @property bool $is_cross_source_outlier

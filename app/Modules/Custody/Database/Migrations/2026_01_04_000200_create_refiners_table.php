@@ -3,34 +3,40 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
  * Refiners — docs/03-domain/02-gold-lot-assay.md §2.9.
  *
  * average_loss_bps is the rolling melt loss used to predict the yield of a
- * MELT operation before it happens.
+ * MELT before it happens, and to spot a refiner whose losses are drifting.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('refiners', function (Blueprint $table): void {
-            $table->bigIncrements('id');
-            $table->string('name', 191);
-            $table->string('license_no', 100);
-            $table->string('address', 500)->nullable();
-            $table->unsignedInteger('average_loss_bps')->default(0);
-            $table->unsignedBigInteger('total_processed_mg')->default(0);
-            $table->json('variance_history')->nullable();
-            $table->enum('status', ['ACTIVE', 'SUSPENDED'])->default('ACTIVE');
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
+        DB::statement(<<<'SQL'
+            CREATE TABLE refiners (
+              id                 BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              name               VARCHAR(191) NOT NULL,
+              license_no         VARCHAR(100) NOT NULL,
+              address            VARCHAR(500) NULL,
+              average_loss_bps   INT UNSIGNED NOT NULL DEFAULT 0,
+              total_processed_mg BIGINT UNSIGNED NOT NULL DEFAULT 0,
+              variance_history   JSON NULL,
+              status             ENUM('ACTIVE','SUSPENDED') NOT NULL DEFAULT 'ACTIVE',
+              created_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                   ON UPDATE CURRENT_TIMESTAMP,
 
-            $table->unique('license_no', 'uq_refiner_license');
-            $table->index('status', 'idx_refiner_status');
-        });
+              PRIMARY KEY (id),
+              UNIQUE KEY uq_refiner_license (license_no),
+              KEY idx_refiner_status (status),
+
+              CONSTRAINT chk_refiner_loss_bps CHECK (average_loss_bps <= 10000)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            SQL);
     }
 
     public function down(): void

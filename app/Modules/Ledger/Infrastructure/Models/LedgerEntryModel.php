@@ -43,6 +43,13 @@ final class LedgerEntryModel extends Model
     /** created_at is written explicitly with microsecond precision; there is no updated_at. */
     public $timestamps = false;
 
+    /**
+     * Microseconds are part of the hashed pre-image, so they must survive the
+     * round trip through the datetime cast — the default 'Y-m-d H:i:s' would
+     * truncate them and every stored row_hash would fail verification.
+     */
+    protected $dateFormat = 'Y-m-d H:i:s.u';
+
     protected $guarded = [];
 
     protected $casts = [
@@ -95,13 +102,13 @@ final class LedgerEntryModel extends Model
 
     protected static function booted(): void
     {
-        static::updating(static function (): void {
+        self::updating(static function (): void {
             throw new LogicException(
                 'ledger_entries is append-only: correct mistakes with reverse(), never UPDATE.'
             );
         });
 
-        static::deleting(static function (): void {
+        self::deleting(static function (): void {
             throw new LogicException(
                 'ledger_entries is append-only: rows are never deleted (invariant I6).'
             );

@@ -3,38 +3,40 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Vaults — docs/03-domain/06-custody-vault.md §6.1 and §6.7 (insurance).
- */
+/** Vaults — docs/03-domain/06-custody-vault.md §6.1 and §6.7 (insurance). */
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('vaults', function (Blueprint $table): void {
-            $table->bigIncrements('id');
-            $table->string('vault_code', 10);              // V01
-            $table->string('name', 191);
-            $table->string('address', 500)->nullable();
-            $table->unsignedBigInteger('operator_organization_id')->nullable();
-            $table->unsignedBigInteger('capacity_fine_mg')->nullable();
+        DB::statement(<<<'SQL'
+            CREATE TABLE vaults (
+              id                      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              vault_code              VARCHAR(10) NOT NULL,
+              name                    VARCHAR(191) NOT NULL,
+              address                 VARCHAR(500) NULL,
+              operator_organization_id BIGINT UNSIGNED NULL,
+              capacity_fine_mg        BIGINT UNSIGNED NULL,
 
-            // Insurance — §6.7
-            $table->string('insurance_policy_no', 100)->nullable();
-            $table->string('insurer_name', 191)->nullable();
-            $table->unsignedBigInteger('coverage_amount_rial')->nullable();
-            $table->date('coverage_expires_at')->nullable();
-            $table->text('liability_terms')->nullable();
+              insurance_policy_no     VARCHAR(100) NULL,
+              insurer_name            VARCHAR(191) NULL,
+              coverage_amount_rial    BIGINT UNSIGNED NULL,
+              coverage_expires_at     DATE NULL,
+              liability_terms         TEXT NULL,
 
-            $table->enum('status', ['ACTIVE', 'SUSPENDED', 'FROZEN', 'CLOSED'])->default('ACTIVE');
-            $table->timestamp('created_at')->useCurrent();
-            $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
+              status                  ENUM('ACTIVE','SUSPENDED','FROZEN','CLOSED')
+                                        NOT NULL DEFAULT 'ACTIVE',
+              created_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at              TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+                                        ON UPDATE CURRENT_TIMESTAMP,
 
-            $table->unique('vault_code', 'uq_vault_code');
-            $table->index('status', 'idx_vault_status');
-        });
+              PRIMARY KEY (id),
+              UNIQUE KEY uq_vault_code (vault_code),
+              KEY idx_vault_status (status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            SQL);
     }
 
     public function down(): void

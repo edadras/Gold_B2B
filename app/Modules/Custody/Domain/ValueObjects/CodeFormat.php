@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Custody\Domain\ValueObjects;
 
 use Illuminate\Container\Container;
+use InvalidArgumentException;
 
 /**
  * Shared formatting for the module's human-readable identifiers.
@@ -41,7 +42,7 @@ final class CodeFormat
     public static function format(string $prefix, int $sequence): string
     {
         if ($sequence < 1) {
-            throw new \InvalidArgumentException("Code sequence must be positive, got {$sequence}");
+            throw new InvalidArgumentException("Code sequence must be positive, got {$sequence}");
         }
 
         return $prefix.str_pad((string) $sequence, self::padLength(), '0', STR_PAD_LEFT);

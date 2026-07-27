@@ -16,7 +16,6 @@ use App\Modules\Identity\Domain\Validators\NationalIdValidator;
 use App\Modules\Identity\Events\OrganizationCreated;
 use App\Modules\Identity\Events\UserRegistered;
 use App\Modules\Identity\Infrastructure\Models\Organization;
-use App\Modules\Identity\Infrastructure\Models\Role;
 use App\Modules\Identity\Infrastructure\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;

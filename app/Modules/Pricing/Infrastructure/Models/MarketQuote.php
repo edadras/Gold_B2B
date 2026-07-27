@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Pricing\Infrastructure\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $best_ask_qty_mg
  * @property int|null $last_price
  * @property int|null $last_qty_mg
- * @property \Carbon\CarbonImmutable|null $last_at
+ * @property CarbonImmutable|null $last_at
  * @property bool $last_is_stale
  * @property int|null $day_open
  * @property int|null $day_high

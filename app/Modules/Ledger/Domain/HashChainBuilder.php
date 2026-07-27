@@ -73,7 +73,7 @@ final class HashChainBuilder
      * Recompute a chain over rows already read from storage.
      *
      * @param  iterable<int, array{id: int, prev_hash: ?string, row_hash: string, created_at: string, account_id: int, amount: int, entry_type: string, reference: string, balance_after: int}>  $rows
-     *   ordered by id ascending, all on the same account
+     *                                                                                                                                                                                                  ordered by id ascending, all on the same account
      * @return array<int, int> ids of rows whose stored hash does not match
      */
     public function verify(iterable $rows): array
@@ -88,6 +88,7 @@ final class HashChainBuilder
             if (! $first && $row['prev_hash'] !== $expectedPrev) {
                 $broken[] = $row['id'];
                 $expectedPrev = $row['row_hash'];
+
                 continue;
             }
 
