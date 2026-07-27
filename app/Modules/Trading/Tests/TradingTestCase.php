@@ -32,7 +32,6 @@ use App\Modules\Trading\Infrastructure\Models\Instrument;
 use App\Modules\Trading\TradingServiceProvider;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 
@@ -65,24 +64,6 @@ abstract class TradingTestCase extends BaseTestCase
     protected const BUYER_USER = 771;
 
     protected const INSTRUMENT = 'GOLD-995-T0';
-
-    public function createApplication(): Application
-    {
-        /** @var Application $app */
-        $app = require Application::inferBasePath().'/bootstrap/app.php';
-
-        $app->make(Kernel::class)->bootstrap();
-
-        // bootstrap/providers.php discovers module providers that exist, so
-        // these are usually already registered; register() is idempotent and
-        // stating them here documents exactly what this suite depends on.
-        $app->register(LedgerServiceProvider::class);
-        $app->register(PricingServiceProvider::class);
-        $app->register(RiskServiceProvider::class);
-        $app->register(TradingServiceProvider::class);
-
-        return $app;
-    }
 
     // ── fixtures ─────────────────────────────────────────────────────────────
 

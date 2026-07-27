@@ -17,7 +17,6 @@ use App\Modules\Ledger\LedgerServiceProvider;
 use App\Modules\Shared\ValueObjects\FineWeight;
 use App\Modules\Shared\ValueObjects\Rial;
 use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 
@@ -26,25 +25,12 @@ use Illuminate\Support\Facades\DB;
  *
  * Registers LedgerServiceProvider explicitly rather than relying on
  * bootstrap/providers.php: AGENT_BRIEF reserves that file for the coordinator,
- * so the module's tests have to stand up their own provider. Registering before
- * the console kernel bootstraps means loadMigrationsFrom() has taken effect by
- * the time RefreshDatabase migrates.
  *
  * Deliberately does NOT use RefreshDatabase itself — the concurrency test needs
  * committed rows that forked children can see, so each subclass opts in.
  */
 abstract class LedgerTestCase extends BaseTestCase
 {
-    public function createApplication(): Application
-    {
-        /** @var Application $app */
-        $app = require Application::inferBasePath().'/bootstrap/app.php';
-
-        $app->register(LedgerServiceProvider::class);
-        $app->make(Kernel::class)->bootstrap();
-
-        return $app;
-    }
 
     // ── fixtures ─────────────────────────────────────────────────────────────
 

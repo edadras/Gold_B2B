@@ -8,7 +8,6 @@ use App\Modules\Reporting\Contracts\ReportingDataSource;
 use App\Modules\Reporting\ReportingServiceProvider;
 use App\Modules\Reporting\Tests\Support\FakeReportingDataSource;
 use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -24,26 +23,7 @@ abstract class ReportingTestCase extends TestCase
 {
     use RefreshDatabase;
 
-    private const TEST_DATABASE = 'goldb2b_test_adr';
-
     protected FakeReportingDataSource $data;
-
-    public function createApplication(): Application
-    {
-        /** @var Application $app */
-        $app = require Application::inferBasePath().'/bootstrap/app.php';
-
-        $app->make(Kernel::class)->bootstrap();
-
-        $app['config']->set(
-            'database.connections.mysql.database',
-            env('REPORTING_TEST_DB', self::TEST_DATABASE),
-        );
-
-        $app->register(ReportingServiceProvider::class);
-
-        return $app;
-    }
 
     protected function setUp(): void
     {

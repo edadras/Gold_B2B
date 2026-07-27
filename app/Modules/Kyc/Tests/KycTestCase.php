@@ -20,7 +20,6 @@ use App\Modules\Kyc\Infrastructure\Models\Document;
 use App\Modules\Kyc\Infrastructure\Models\Signatory;
 use App\Modules\Kyc\KycServiceProvider;
 use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Foundation\Application;
 use Tests\TestCase;
 
 /**
@@ -29,20 +28,6 @@ use Tests\TestCase;
 abstract class KycTestCase extends TestCase
 {
     private static int $ibanSequence = 0;
-
-    public function createApplication(): Application
-    {
-        // base_path() is unavailable until the container has an application
-        // bound, so the path is resolved relative to this file.
-        /** @var Application $app */
-        $app = require dirname(__DIR__, 4).'/bootstrap/app.php';
-        $app->make(Kernel::class)->bootstrap();
-
-        $app->register(IdentityServiceProvider::class);
-        $app->register(KycServiceProvider::class);
-
-        return $app;
-    }
 
     protected function seedRoles(): void
     {

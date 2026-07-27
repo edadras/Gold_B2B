@@ -24,12 +24,6 @@ abstract class CounterpartyTestCase extends TestCase
      * twice is a no-op, so this stays correct once the provider list includes
      * the module too.
      */
-    protected function refreshApplication(): void
-    {
-        parent::refreshApplication();
-
-        $this->app->register(CounterpartyServiceProvider::class);
-    }
 
     protected function setUp(): void
     {

@@ -11,6 +11,7 @@ use App\Modules\Settlement\Application\GoldTransferService;
 use App\Modules\Settlement\Application\PaymentService;
 use App\Modules\Settlement\Domain\DeliveryMethod;
 use App\Modules\Settlement\Domain\SettlementStatus;
+use App\Modules\Settlement\Infrastructure\CustodyLotMovementAdapter;
 use App\Modules\Settlement\Infrastructure\Models\GoldTransferModel;
 use App\Modules\Settlement\Infrastructure\Models\SettlementModel;
 use App\Modules\Settlement\Tests\Support\SettlementTestCase;
@@ -39,6 +40,20 @@ final class GoldTransferServiceTest extends SettlementTestCase
         $this->setUpLedger(self::SELLER, self::BUYER);
         $this->depositGold(self::SELLER, 2_000_000);
         $this->depositRial(self::BUYER, 60_000_000_000);
+    }
+
+    /**
+     * Nothing below means anything if the suite is quietly running against the
+     * no-op port, so pin the binding: the tests exercise the class production
+     * resolves, and it reports itself operational.
+     */
+    #[Test]
+    public function the_production_binding_is_the_real_custody_backed_port(): void
+    {
+        $port = $this->lotMovementPort();
+
+        $this->assertInstanceOf(CustodyLotMovementAdapter::class, $port);
+        $this->assertTrue($port->isOperational());
     }
 
     #[Test]

@@ -11,7 +11,6 @@ use App\Modules\Dispute\DisputeServiceProvider;
 use App\Modules\Dispute\Tests\Support\RecordingHoldPort;
 use App\Modules\Dispute\Tests\Support\StubTradePartiesProvider;
 use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -30,28 +29,9 @@ abstract class DisputeTestCase extends TestCase
 {
     use RefreshDatabase;
 
-    private const TEST_DATABASE = 'goldb2b_test_adr';
-
     protected RecordingHoldPort $holds;
 
     protected StubTradePartiesProvider $trades;
-
-    public function createApplication(): Application
-    {
-        /** @var Application $app */
-        $app = require Application::inferBasePath().'/bootstrap/app.php';
-
-        $app->make(Kernel::class)->bootstrap();
-
-        $app['config']->set(
-            'database.connections.mysql.database',
-            env('DISPUTE_TEST_DB', self::TEST_DATABASE),
-        );
-
-        $app->register(DisputeServiceProvider::class);
-
-        return $app;
-    }
 
     protected function setUp(): void
     {

@@ -6,7 +6,6 @@ namespace App\Modules\Accounting\Tests;
 
 use App\Modules\Accounting\AccountingServiceProvider;
 use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -30,22 +29,4 @@ abstract class AccountingTestCase extends TestCase
 {
     use RefreshDatabase;
 
-    private const TEST_DATABASE = 'goldb2b_test_adr';
-
-    public function createApplication(): Application
-    {
-        /** @var Application $app */
-        $app = require Application::inferBasePath().'/bootstrap/app.php';
-
-        $app->make(Kernel::class)->bootstrap();
-
-        $app['config']->set(
-            'database.connections.mysql.database',
-            env('ACCOUNTING_TEST_DB', self::TEST_DATABASE),
-        );
-
-        $app->register(AccountingServiceProvider::class);
-
-        return $app;
-    }
 }

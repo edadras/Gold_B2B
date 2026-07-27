@@ -23,12 +23,6 @@ abstract class ReputationTestCase extends TestCase
      * setUpTraits(), which runs before any afterApplicationCreated callback, so
      * a provider registered later would contribute no migrations.
      */
-    protected function refreshApplication(): void
-    {
-        parent::refreshApplication();
-
-        $this->app->register(ReputationServiceProvider::class);
-    }
 
     protected function setUp(): void
     {

@@ -11,7 +11,6 @@ use App\Modules\Identity\Infrastructure\Models\Organization;
 use App\Modules\Identity\Infrastructure\Models\Role;
 use App\Modules\Identity\Infrastructure\Models\User;
 use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Foundation\Application;
 use Tests\TestCase;
 
 /**
@@ -21,19 +20,6 @@ use Tests\TestCase;
  */
 abstract class IdentityTestCase extends TestCase
 {
-    public function createApplication(): Application
-    {
-        // base_path() is unavailable until the container has an application
-        // bound, so the path is resolved relative to this file.
-        /** @var Application $app */
-        $app = require dirname(__DIR__, 4).'/bootstrap/app.php';
-        $app->make(Kernel::class)->bootstrap();
-
-        // Idempotent: returns the existing instance if already registered.
-        $app->register(IdentityServiceProvider::class);
-
-        return $app;
-    }
 
     protected function seedRoles(): void
     {

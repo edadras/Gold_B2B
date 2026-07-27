@@ -35,12 +35,6 @@ abstract class NotificationTestCase extends TestCase
      * setUpTraits(), which runs before any afterApplicationCreated callback, so
      * a provider registered later would contribute no migrations.
      */
-    protected function refreshApplication(): void
-    {
-        parent::refreshApplication();
-
-        $this->app->register(NotificationServiceProvider::class);
-    }
 
     protected function setUp(): void
     {
