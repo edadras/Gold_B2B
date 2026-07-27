@@ -1,0 +1,45 @@
+# Dependencies
+/vendor
+/node_modules
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Build output
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+
+# Flutter
+/mobile/.dart_tool/
+/mobile/build/
+/mobile/.flutter-plugins
+/mobile/.flutter-plugins-dependencies
+/mobile/ios/Pods/
+/mobile/android/.gradle/
+*.g.dart
+*.freezed.dart
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Testing
+/coverage
+.phpunit.result.cache
+
+# Secrets — never commit
+*.pem
+*.key
+*.p12
+secrets/
