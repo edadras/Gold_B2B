@@ -5,9 +5,15 @@
         <Settlements v-else-if="screen === 'settlements'" />
         <Orders v-else-if="screen === 'orders'" />
         <Trades v-else-if="screen === 'trades'" />
+        <Otc v-else-if="screen === 'otc'" />
+        <Rfq v-else-if="screen === 'rfq'" />
         <Lots v-else-if="screen === 'lots'" />
         <Counterparties v-else-if="screen === 'counterparties'" />
+        <Disputes v-else-if="screen === 'disputes'" />
         <Reports v-else-if="screen === 'reports'" />
+        <Kyc v-else-if="screen === 'kyc'" />
+        <Team v-else-if="screen === 'team'" />
+        <Settings v-else-if="screen === 'settings'" />
         <p v-else class="page__missing">صفحه یافت نشد.</p>
     </AppLayout>
 
@@ -33,12 +39,18 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 import AppLayout from './Layouts/AppLayout.vue';
 import Counterparties from './Pages/Counterparties/Index.vue';
+import Disputes from './Pages/Disputes/Index.vue';
+import Kyc from './Pages/Kyc/Index.vue';
 import Ledger from './Pages/Ledger/Index.vue';
 import Lots from './Pages/Lots/Index.vue';
 import Orders from './Pages/Orders/Index.vue';
+import Otc from './Pages/Otc/Index.vue';
 import Reports from './Pages/Reports/Index.vue';
+import Rfq from './Pages/Rfq/Index.vue';
+import Settings from './Pages/Settings/Index.vue';
 import Settlements from './Pages/Settlements/Index.vue';
 import ShortcutHelp from './Components/Common/ShortcutHelp.vue';
+import Team from './Pages/Team/Index.vue';
 import Terminal from './Pages/Market/Terminal.vue';
 import Trades from './Pages/Trades/Index.vue';
 import { isTypingIn, normaliseKey } from './Composables/useKeyboard.js';

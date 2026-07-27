@@ -16,15 +16,19 @@ resources/
     │   ├── numeric-input.js    ◄── NumericInput  (Persian digits, BigInt)
     │   ├── int-math.js         ◄── IntMath       (floor/ceil/remainder)
     │   ├── value-objects.js    ◄── Weight, FineWeight, Purity, Rial, Price…
+    │   ├── negotiation.js      ◄── OTC/RFQ: notional, quote ranking, expiry
+    │   ├── enum-catalogue.js   ◄── reading GET /meta/enums
+    │   ├── kyc-checklist.js    ◄── missing_items → instructions
+    │   ├── digest.js           ◄── SHA-256 of an evidence file, in-browser
     │   ├── format.js           ◄── Display.php's client half
     │   ├── jalali.js           ◄── JalaliDate.php, ported line for line
     │   ├── api.js              ◄── the ONLY place that calls fetch
     │   ├── feed.js             ◄── WebSocket-or-poll transport + staleness
     │   └── __tests__/          ◄── node --test
-    ├── Stores/                 ◄── panel.js, market.js
-    ├── Composables/            ◄── useKeyboard.js, useFormatting.js
+    ├── Stores/                 ◄── panel.js, market.js, enums.js
+    ├── Composables/            ◄── useKeyboard.js, useFormatting.js, useFreshness.js
     ├── Layouts/                ◄── AppLayout.vue
-    ├── Components/             ◄── Market/, Data/, Common/
+    ├── Components/             ◄── Market/, Data/, Common/, Otc/, Rfq/, Disputes/, Settings/
     └── Pages/                  ◄── Market/Terminal.vue, Ledger/, …
 ```
 
@@ -62,7 +66,13 @@ mounts `web.php` under `/app` with the `web` group instead.
 | §1.5 ledger | running statement, per-row link to the source document, closing-balance breakdown, reconciliation banner |
 | §1.6 WebSocket | implemented as an interface with a polling fallback — see below |
 | Settlements, orders, trades, lots, counterparties, reports | built on the §1.4 table |
-| OTC, RFQ, disputes, KYC, team, settings, vault operations | **not built** — endpoints exist, screens do not |
+| OTC (§4.6) | offer list by direction, create, counter, accept, reject, cancel, live countdowns |
+| RFQ (§4.7) | my requests and inbox, create, quote, withdraw, side-aware quote ranking, accept (incl. partial) |
+| Disputes (§13) | list, open a case, merged timeline + transcript, reply, accept ✍️, escalate, withdraw, evidence with a browser-computed SHA-256 |
+| KYC (§2.2) | status and `missing_items` checklist, document upload/delete, licences, bank accounts, submit / resubmit |
+| Team (§2.2) | member list, invite, role editing, deactivation |
+| Settings | notification preferences, webhooks (register, rotate, test, deliveries), profile, sessions, organisation contact details |
+| Vault operations | **not built** — endpoints exist, screens do not |
 
 ---
 
@@ -179,3 +189,34 @@ it is what resolves that state.
 **Stale data is visible.** Every live figure carries its own age. Past 30 s the
 figure is greyed and a `StaleBadge` prints "۴۲ ثانیه پیش". A failed refresh
 keeps the last value and lets the age climb rather than blanking the ladder.
+
+---
+
+## Endpoints these screens needed and did not find
+
+Nothing below was invented client-side; each screen was built against what
+`php artisan route:list --path=api/v1` actually serves, and the gaps are listed
+rather than papered over.
+
+| Wanted by | Endpoint | State |
+|---|---|---|
+| Disputes — «post a message in the negotiation room» | `POST /disputes/{id}/messages` | `PostDisputeMessageRequest` exists and is documented as §2.12 «پیام در مذاکره», but **no route registers it**. The panel therefore posts prose through `POST /disputes/{id}/reply`, which is the respondent's answer and carries a different meaning; a claimant cannot add a message at all. |
+| Disputes — settlement offers inside a case | `POST /disputes/{id}/propose-settlement` | `ProposeSettlementRequest` and `MessageType::isProposal()` exist and `GET /disputes/{id}` returns proposal messages, but **no route registers the write**. Proposals are rendered read-only; there is no way to make one. |
+| KYC — «respond to an information request» | none | `INFO_REQUIRED` is a real status and the dossier becomes editable in it, but `KycProfileResource` deliberately withholds the officer's note (`last_decision_note`) and no endpoint accepts a written reply. Responding is expressed as the platform models it: fix the outstanding items, then `POST /organization/kyc/submit`. |
+| Settings — API keys | none | There are no personal-access-token endpoints. The panel's bearer token comes from `/auth/login`; nothing lists, mints or revokes a long-lived key, so the tab covers webhooks (which are real) and says so. |
+| Team — reactivate a user | none | `DELETE /organization/users/{id}` disables; there is no inverse. A disabled colleague is shown as such with no button. |
+
+## Deliberately left out
+
+- **Two-factor enrolment.** `/auth/2fa/enable` → `/auth/2fa/confirm` needs a QR
+  code and a verification step, and `DELETE /auth/2fa` is ✍️ signed. Half an
+  enrolment flow is worse than none, so Settings states the current setting and
+  stops there.
+- **The transaction-signature (✍️) prompt itself.** Accepting a dispute claim
+  and adding a bank account both require `X-Transaction-Signature`. There is no
+  shared OTP dialog in the panel — the existing settlement screen has the same
+  gap — so both screens label the action ✍️ and report
+  `AUTH_TRANSACTION_SIGN_REQUIRED` as the second factor it is rather than as a
+  failure. One dialog would serve all four call sites and is the obvious next
+  piece of work.
+- **Vault operations**, which were out of scope for this pass.

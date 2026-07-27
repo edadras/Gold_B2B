@@ -1244,3 +1244,271 @@ kbd {
     font-size: 12px;
     color: var(--text-muted);
 }
+
+/* ── Negotiation, disputes, KYC, team, settings ──────────────────────────────
+ *
+ * Added with the OTC / RFQ / disputes / KYC / team / settings screens. Same two
+ * rules as the rest of the file: any figure sits inside `.num` so the bidi
+ * algorithm cannot reorder it, and anything whose truth decays with time is
+ * greyed rather than left looking current.
+ */
+
+textarea.input {
+    resize: vertical;
+    font: inherit;
+    min-height: 60px;
+}
+
+.panel-card__section {
+    border-top: 1px solid var(--border);
+    margin-top: 10px;
+    padding-top: 10px;
+}
+
+.panel-card h3 {
+    font-size: 12px;
+    margin: 10px 0 6px;
+    color: var(--text-muted);
+}
+
+/* Deadline countdown — a sibling of .stale, and for the same reason. */
+.countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+}
+
+.countdown--ok {
+    color: var(--text);
+}
+
+.countdown--soon {
+    color: var(--warn);
+}
+
+.countdown--critical {
+    color: var(--sell);
+    font-weight: 600;
+}
+
+/* Expired reads like stale data, because that is what it is. */
+.countdown--expired {
+    color: var(--text-muted);
+    text-decoration: line-through;
+}
+
+.countdown--none {
+    color: var(--text-muted);
+}
+
+.countdown__word {
+    text-decoration: none;
+}
+
+/* Counterparty search */
+.member-picker__results {
+    list-style: none;
+    margin: 0 0 6px;
+    padding: 0;
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.member-picker__result {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+    align-items: center;
+    padding: 4px 8px;
+    background: none;
+    border: 0;
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+    text-align: start;
+}
+
+.member-picker__result:hover,
+.member-picker__result.is-chosen {
+    background: var(--bg-hover);
+}
+
+.member-picker__name {
+    flex: 1;
+}
+
+.member-picker__chosen {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 11px;
+}
+
+.chip__remove {
+    background: none;
+    border: 0;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+}
+
+/* Dispute case */
+.dispute__claim {
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px;
+    margin: 8px 0;
+    white-space: pre-wrap;
+}
+
+.timeline {
+    list-style: none;
+    margin: 0 0 10px;
+    padding: 0;
+    border-inline-start: 2px solid var(--border);
+}
+
+.timeline__item {
+    display: flex;
+    gap: 10px;
+    padding: 4px 10px;
+    position: relative;
+}
+
+.timeline__item::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: -5px;
+    inset-block-start: 9px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+}
+
+.timeline__item--message::before {
+    background: var(--info);
+}
+
+.timeline__item--proposal::before {
+    background: var(--accent);
+}
+
+.timeline__item--action::before {
+    background: var(--buy);
+}
+
+.timeline__when {
+    width: 130px;
+    flex: none;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.timeline__what {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.timeline__body {
+    white-space: pre-wrap;
+}
+
+/* KYC checklist */
+.checklist {
+    list-style: none;
+    margin: 0 0 10px;
+    padding: 0;
+}
+
+.checklist__item {
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+    padding: 2px 0;
+}
+
+.checklist__mark {
+    color: var(--sell);
+}
+
+/* Webhook manager */
+.event-group {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px 8px;
+    margin-bottom: 4px;
+}
+
+.event-group summary {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.event-group .field--inline {
+    display: flex;
+    gap: 6px;
+    padding: 1px 0;
+}
+
+.webhook__url {
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+fieldset.field {
+    border: 0;
+    padding: 0;
+    margin: 0 0 8px;
+}
+
+fieldset.field legend {
+    padding: 0;
+}
+
+/* ── Top bar with fourteen screens ───────────────────────────────────────────
+ *
+ * The nav was written for eight links; OTC, RFQ, disputes, KYC, team and
+ * settings take it to fourteen, which overflows a 40 px bar on a laptop. The
+ * bar's height is load-bearing (the terminal's three columns are sized against
+ * it), so the nav scrolls inside itself rather than wrapping and pushing the
+ * market state off screen.
+ */
+
+.app__nav {
+    min-width: 0;
+    flex: 0 1 auto;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.app__nav::-webkit-scrollbar {
+    height: 4px;
+}
+
+.app__nav-link {
+    padding: 4px 6px;
+    white-space: nowrap;
+}

@@ -22,6 +22,34 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { panel } from '../Stores/panel.js';
 
 /**
+ * A reactive wall clock, so an expiry test is recomputed as time passes.
+ *
+ * Without one, `remainingMs(row.expires_at)` is evaluated once at render and an
+ * offer that expired thirty seconds ago keeps its accept button until the next
+ * refetch. The button would produce a server refusal, which the member reads as
+ * a broken panel rather than as an expired offer.
+ */
+export function useClock({ tickMs = 1000 } = {}) {
+    const now = ref(Date.now());
+    let timer = null;
+
+    onMounted(() => {
+        timer = setInterval(() => {
+            now.value = Date.now();
+        }, tickMs);
+    });
+
+    onBeforeUnmount(() => {
+        if (timer !== null) {
+            clearInterval(timer);
+            timer = null;
+        }
+    });
+
+    return now;
+}
+
+/**
  * @param {object} [options]
  * @param {number} [options.tickMs] how often the age is recomputed
  * @returns {{ageMs: import('vue').Ref<number>, staleAfterMs: number, touch: () => void}}

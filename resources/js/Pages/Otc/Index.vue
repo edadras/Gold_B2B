@@ -138,11 +138,14 @@ import WeightCell from '../../Components/Data/WeightCell.vue';
 import { loadEnums } from '../../Stores/enums.js';
 import { notionalValue, remainingMs, roundsRemaining } from '../../lib/negotiation.js';
 import { notify, useApi } from '../../Stores/panel.js';
-import { useAutoRefresh, useFreshness } from '../../Composables/useFreshness.js';
+import { useAutoRefresh, useClock, useFreshness } from '../../Composables/useFreshness.js';
 import { uuid } from '../../lib/api.js';
 
 const api = useApi();
 const { ageMs, staleAfterMs, touch } = useFreshness();
+// A ticking clock, so an offer's buttons disappear the second it expires
+// rather than at the next refetch.
+const now = useClock();
 
 const table = ref(null);
 const direction = ref('received');
@@ -198,15 +201,19 @@ const acceptNotional = computed(() => {
     }
 });
 
-const isExpired = (row) => remainingMs(row.expires_at) === 0;
-const isLive = (row) => ['PENDING', 'COUNTERED'].includes(row.status) && ! isExpired(row);
+const isExpired = (row) => remainingMs(row.expires_at, now.value) === 0;
+/** Still negotiable: an open status AND time left on the clock. */
+const isOpenStatus = (row) => ['PENDING', 'COUNTERED'].includes(row.status);
+const isLive = (row) => isOpenStatus(row) && ! isExpired(row);
 const remainingRounds = (row) => roundsRemaining(row);
 
 function rowClass(row) {
     if (row.awaiting_me && isLive(row)) {
         return 'row--attention';
     }
-    return isExpired(row) && isLive(row) ? 'row--danger' : null;
+    // Open on the server, dead on the clock: the sweeper has not closed it yet,
+    // and the row must not look actionable in the meantime.
+    return isOpenStatus(row) && isExpired(row) ? 'row--danger' : null;
 }
 
 function reload() {

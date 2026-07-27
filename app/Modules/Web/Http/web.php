@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Modules\Web\Domain\PanelScreen;
 use App\Modules\Web\Http\Controllers\PanelController;
 use App\Modules\Web\Http\Controllers\PanelSessionController;
 use App\Modules\Web\Http\Middleware\AuthenticatePanel;
-use App\Modules\Web\Domain\PanelScreen;
 use Illuminate\Support\Facades\Route;
 
 /*

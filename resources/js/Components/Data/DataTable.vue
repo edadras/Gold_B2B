@@ -188,6 +188,18 @@ const props = defineProps({
     limit: { type: Number, default: 50 },
     exportPath: { type: String, default: null },
     rowClass: { type: Function, default: null },
+    /**
+     * An optional client-side predicate applied to the loaded rows.
+     *
+     * For the endpoints that return the caller's WHOLE collection with no
+     * server-side filter — `/disputes` is the one in the panel — a `filters`
+     * control would send `filter[…]` parameters the server ignores, and the
+     * member would watch a dropdown do nothing. This narrows what is already
+     * here instead, and the two are never mixed: when a rowFilter is set the
+     * totals fall back to the on-screen sum, because a server total would
+     * describe rows the member cannot see.
+     */
+    rowFilter: { type: Function, default: null },
     /** Milliseconds since the data was refreshed; null hides the badge. */
     ageMs: { type: Number, default: null },
     staleAfterMs: { type: Number, default: 30000 },
@@ -228,7 +240,7 @@ function rowKey(row, index) {
 
 const totals = computed(() => {
     const serverTotals = meta.value.totals;
-    if (serverTotals && typeof serverTotals === 'object') {
+    if (serverTotals && typeof serverTotals === 'object' && props.rowFilter === null) {
         return serverTotals;
     }
 
@@ -315,10 +327,13 @@ async function load() {
             cursor: cursor.value,
         });
 
-        rows.value = Array.isArray(response.data) ? response.data : [];
+        const received = Array.isArray(response.data) ? response.data : [];
+
+        rows.value = props.rowFilter === null ? received : received.filter(props.rowFilter);
         links.value = response.links || { next: null, prev: null };
         meta.value = response.meta || {};
-        emit('loaded', { rows: rows.value, meta: meta.value });
+        // The unfiltered set is emitted too, so a page can count what it hid.
+        emit('loaded', { rows: rows.value, received, meta: meta.value });
     } catch (error) {
         // 401 is handled globally by the API client's redirect; anything else
         // is worth telling the user about rather than showing an empty table.
