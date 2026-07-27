@@ -63,6 +63,21 @@ final class ConcurrentReserveTest extends LedgerTestCase
         $this->assertSame(self::STARTING_MG, $this->goldBalance(self::ORG));
     }
 
+    /**
+     * This test commits its rows on purpose — forked children run in their own
+     * connections and cannot see an uncommitted transaction. That means nothing
+     * rolls back afterwards, so the data must be cleared explicitly or it leaks
+     * into every test that runs later in the suite.
+     */
+    protected function tearDown(): void
+    {
+        if ($this->canFork()) {
+            Artisan::call('migrate:fresh', ['--force' => true]);
+        }
+
+        parent::tearDown();
+    }
+
     #[Test]
     public function only_one_of_five_concurrent_reservations_can_succeed(): void
     {
