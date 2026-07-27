@@ -7,6 +7,7 @@ namespace App\Modules\Counterparty;
 use App\Modules\Counterparty\Application\BalanceConfirmationService;
 use App\Modules\Counterparty\Application\ConcentrationAnalyser;
 use App\Modules\Counterparty\Application\CreditLimitService;
+use App\Modules\Counterparty\Application\MemberDirectoryService;
 use App\Modules\Counterparty\Application\ReconciliationService;
 use App\Modules\Counterparty\Application\RelationService;
 use App\Modules\Counterparty\Application\StatementService;
@@ -37,6 +38,8 @@ final class CounterpartyServiceProvider extends ModuleServiceProvider
         $this->app->singleton(ConcentrationAnalyser::class);
         $this->app->singleton(BalanceConfirmationService::class);
         $this->app->singleton(ReconciliationService::class);
+        // Backs GET /members/search; resolves Identity's directory contract.
+        $this->app->singleton(MemberDirectoryService::class);
     }
 
     /** @return array<class-string, class-string> */

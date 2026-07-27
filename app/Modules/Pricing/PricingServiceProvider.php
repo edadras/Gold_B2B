@@ -7,6 +7,7 @@ namespace App\Modules\Pricing;
 use App\Modules\Pricing\Application\QuoteService;
 use App\Modules\Pricing\Console\BuildOhlcCommand;
 use App\Modules\Pricing\Console\FetchReferencePriceCommand;
+use App\Modules\Pricing\Contracts\InstrumentDirectory;
 use App\Modules\Pricing\Contracts\PriceReaderInterface;
 use App\Modules\Pricing\Contracts\QuoteWriterInterface;
 use App\Modules\Pricing\Contracts\TradePrintSourceInterface;
@@ -14,8 +15,11 @@ use App\Modules\Pricing\Infrastructure\Drivers\ManualPriceDriver;
 use App\Modules\Pricing\Infrastructure\Drivers\PriceDriverRegistry;
 use App\Modules\Pricing\Infrastructure\Drivers\StubPriceDriver;
 use App\Modules\Pricing\Infrastructure\EloquentPriceReader;
+use App\Modules\Pricing\Infrastructure\NullInstrumentDirectory;
 use App\Modules\Pricing\Infrastructure\NullTradePrintSource;
+use App\Modules\Pricing\Infrastructure\QuoteReferencePriceOracle;
 use App\Modules\Shared\Concerns\ModuleServiceProvider;
+use App\Modules\Shared\Contracts\ReferencePriceOracle;
 
 final class PricingServiceProvider extends ModuleServiceProvider
 {
@@ -31,6 +35,12 @@ final class PricingServiceProvider extends ModuleServiceProvider
             QuoteWriterInterface::class => QuoteService::class,
             // Replaced by the Trading module once it owns a trades table.
             TradePrintSourceInterface::class => NullTradePrintSource::class,
+            // Ditto for the instruments table, which Trading owns.
+            InstrumentDirectory::class => NullInstrumentDirectory::class,
+
+            // Shared declared this port for GET /balances, which lives in
+            // Ledger — a module that may not depend on Pricing.
+            ReferencePriceOracle::class => QuoteReferencePriceOracle::class,
         ];
     }
 

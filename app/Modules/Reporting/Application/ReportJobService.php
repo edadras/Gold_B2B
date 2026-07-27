@@ -141,6 +141,40 @@ final readonly class ReportJobService
     }
 
     /**
+     * A job by id, scoped to the organisation that asked for it.
+     *
+     * The organisation filter is part of the lookup rather than a check the
+     * caller performs afterwards: `GET /reports/exports/{id}` must answer 404
+     * for another member's job, and a lookup that could return the row at all
+     * is one refactor away from leaking it.
+     */
+    public function findForOrganization(int $jobId, int $organizationId): ?ReportJobModel
+    {
+        /** @var ?ReportJobModel $job */
+        $job = ReportJobModel::query()
+            ->whereKey($jobId)
+            ->where('organization_id', $organizationId)
+            ->first();
+
+        return $job;
+    }
+
+    /**
+     * The most recent export jobs an organisation asked for.
+     *
+     * @return array<int, ReportJobModel>
+     */
+    public function recentForOrganization(int $organizationId, int $limit = 50): array
+    {
+        return ReportJobModel::query()
+            ->where('organization_id', $organizationId)
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->all();
+    }
+
+    /**
      * Resolve a download token to its job.
      *
      * Returns null for an unknown, expired or unfinished token — the caller

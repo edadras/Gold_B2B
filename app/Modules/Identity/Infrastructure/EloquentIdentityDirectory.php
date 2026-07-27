@@ -6,6 +6,7 @@ namespace App\Modules\Identity\Infrastructure;
 
 use App\Modules\Identity\Application\PermissionChecker;
 use App\Modules\Identity\Contracts\IdentityDirectory;
+use App\Modules\Identity\Contracts\MemberSearchResult;
 use App\Modules\Identity\Contracts\OrganizationIdentityChecks;
 use App\Modules\Identity\Contracts\OrganizationSnapshot;
 use App\Modules\Identity\Contracts\UserSnapshot;
@@ -65,6 +66,52 @@ final class EloquentIdentityDirectory implements IdentityDirectory
             roles: array_map(static fn (RoleEnum $r): string => $r->value, $user->roleEnums()),
             permissions: $user->permissionNames(),
         );
+    }
+
+    /**
+     * The select list is explicit and the result is mapped field by field, so
+     * no encrypted column is ever loaded, let alone decrypted: `national_id_enc`
+     * and `legal_id_enc` are not in the projection at all, which is a stronger
+     * guarantee than relying on the model's `$hidden`.
+     *
+     * `is_platform` rows are excluded — the operator's own organisation is not
+     * a tradeable counterparty. The caller's own id is not excluded here; see
+     * the interface.
+     *
+     * @return list<MemberSearchResult>
+     */
+    public function search(string $query, int $limit): array
+    {
+        $needle = trim($query);
+
+        if ($needle === '' || $limit < 1) {
+            return [];
+        }
+
+        // Escaped so a member cannot turn "%" into a "list every member" query.
+        $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $needle);
+
+        return Organization::query()
+            ->select(['id', 'display_name', 'city', 'type', 'status'])
+            ->where('is_platform', false)
+            ->where(function ($builder) use ($escaped): void {
+                $builder
+                    ->where('display_name', 'like', '%'.$escaped.'%')
+                    ->orWhere('city', 'like', $escaped.'%');
+            })
+            ->orderBy('display_name')
+            ->orderBy('id')
+            ->limit($limit)
+            ->get()
+            ->map(static fn (Organization $o): MemberSearchResult => new MemberSearchResult(
+                organizationId: (int) $o->id,
+                displayName: (string) $o->display_name,
+                city: (string) $o->city,
+                type: $o->type->value,
+                status: $o->status->value,
+            ))
+            ->values()
+            ->all();
     }
 
     public function organizationIdentityChecks(int $organizationId): ?OrganizationIdentityChecks

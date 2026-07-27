@@ -5,7 +5,9 @@ declare(strict_types=1);
 use App\Modules\Shared\Exceptions\DomainException;
 use App\Modules\Shared\Http\ApiResponse;
 use App\Modules\Shared\Http\Middleware\AssignRequestId;
+use App\Modules\Shared\Http\Middleware\ForceJsonResponse;
 use App\Modules\Shared\Http\Middleware\HandleIdempotency;
+use App\Modules\Shared\Http\Middleware\RequireTransactionSignature;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -25,11 +27,16 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->api(prepend: [
+            ForceJsonResponse::class,
             AssignRequestId::class,
         ]);
 
         $middleware->alias([
             'idempotency' => HandleIdempotency::class,
+            // "✍️" in docs/05-api/02-endpoints.md. Mounted BEFORE `idempotency`
+            // on every route that uses both, so a refused signature does not
+            // burn the key and make the corrected retry replay the 403.
+            'transaction.sign' => RequireTransactionSignature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

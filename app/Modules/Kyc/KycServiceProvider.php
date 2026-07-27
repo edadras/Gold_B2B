@@ -8,7 +8,9 @@ use App\Modules\Kyc\Application\DocumentService;
 use App\Modules\Kyc\Console\CheckExpiringLicensesCommand;
 use App\Modules\Kyc\Contracts\KycDirectory;
 use App\Modules\Kyc\Infrastructure\EloquentKycDirectory;
+use App\Modules\Kyc\Infrastructure\KycPayoutAccountDirectory;
 use App\Modules\Shared\Concerns\ModuleServiceProvider;
+use App\Modules\Shared\Contracts\PayoutAccountDirectory;
 
 final class KycServiceProvider extends ModuleServiceProvider
 {
@@ -21,6 +23,9 @@ final class KycServiceProvider extends ModuleServiceProvider
     {
         return [
             KycDirectory::class => EloquentKycDirectory::class,
+            // Settlement asks "where do I pay this member?" through Shared's
+            // port; Kyc owns `bank_accounts`, so Kyc supplies the adapter.
+            PayoutAccountDirectory::class => KycPayoutAccountDirectory::class,
         ];
     }
 

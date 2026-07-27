@@ -98,6 +98,60 @@ final class DocumentService
     }
 
     /**
+     * The member's own uploads, newest first.
+     *
+     * Added for `GET /organization/documents`: a controller may not query
+     * Eloquent, and the ordering ("the newest upload of each type is the one
+     * that counts") is a domain statement, not a presentation choice.
+     *
+     * @return list<Document>
+     */
+    public function forOrganization(int $organizationId): array
+    {
+        return Document::query()
+            ->where('organization_id', $organizationId)
+            ->orderByDesc('id')
+            ->get()
+            ->all();
+    }
+
+    public function find(int $documentId): ?Document
+    {
+        /** @var Document|null */
+        return Document::query()->find($documentId);
+    }
+
+    /**
+     * Remove an upload the member changed its mind about.
+     *
+     * A VERIFIED document is refused: a compliance officer has already made a
+     * decision citing it, and deleting the evidence would leave that decision
+     * unsupported. The member's route to replacing it is a re-upload, which
+     * SUPERSEDES rather than destroys (see store()).
+     *
+     * The bytes go after the row, and outside the transaction: a failed object
+     * delete must not roll back the database, and an orphaned object is a
+     * janitor's problem while an orphaned row is a broken dossier.
+     *
+     * @throws KycOperationException when the document has already been verified
+     */
+    public function delete(Document $document): void
+    {
+        if ($document->status === DocumentStatus::VERIFIED) {
+            throw KycOperationException::documentAlreadyVerified((int) $document->id);
+        }
+
+        $disk = (string) $document->disk;
+        $path = (string) $document->storage_path;
+
+        DB::transaction(static function () use ($document): void {
+            $document->delete();
+        });
+
+        Storage::disk($disk)->delete($path);
+    }
+
+    /**
      * Short-lived download URL. Callers must write an audit entry for every
      * call — every document view is auditable (docs §1.5).
      */
@@ -113,6 +167,27 @@ final class DocumentService
         }
 
         return $disk->temporaryUrl($document->storage_path, now()->addMinutes($minutes));
+    }
+
+    /**
+     * The URL an API response may carry, or null when there is none.
+     *
+     * temporaryUrl() falls back to the raw storage path on a driver that
+     * cannot sign — useful in a console script, catastrophic in a response
+     * body, because Document::$hidden exists precisely to keep that path out
+     * of the API. So this wrapper returns null unless it got back something
+     * that is unambiguously a URL, and swallows the local driver's "does not
+     * support temporary URLs" refusal.
+     */
+    public function downloadUrlFor(Document $document, int $minutes = 5): ?string
+    {
+        try {
+            $url = $this->temporaryUrl($document, $minutes);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return str_starts_with($url, 'http://') || str_starts_with($url, 'https://') ? $url : null;
     }
 
     /** Verify the stored bytes still hash to what we recorded. */

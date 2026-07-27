@@ -63,6 +63,29 @@ final class CollateralService
         return $total;
     }
 
+    /**
+     * The member's own pledges, for `GET /risk/collaterals` (§2.15).
+     *
+     * Lives here rather than in the controller so no endpoint has to know that
+     * `collaterals` is an Eloquent table, and so the organisation predicate —
+     * the tenancy leg — is written once. Released and liquidated rows are
+     * included: a member reviewing its security needs the history, and the
+     * status field says which rows still count towards coverage.
+     *
+     * @return list<Collateral>
+     */
+    public function pledgesFor(int $organizationId): array
+    {
+        /** @var list<Collateral> $pledges */
+        $pledges = Collateral::query()
+            ->where('organization_id', $organizationId)
+            ->orderByDesc('id')
+            ->get()
+            ->all();
+
+        return $pledges;
+    }
+
     public function assess(int $organizationId, int $instrumentId = 1): CoverageAssessment
     {
         $goldPrice = $this->prices->lastPrice($instrumentId)

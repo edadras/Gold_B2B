@@ -12,7 +12,11 @@ use App\Modules\Identity\Domain\Permission;
 use App\Modules\Identity\Infrastructure\EloquentIdentityDirectory;
 use App\Modules\Identity\Infrastructure\Models\Organization;
 use App\Modules\Identity\Infrastructure\Models\User;
+use App\Modules\Identity\Infrastructure\IdentityAuthorizationGateway;
+use App\Modules\Identity\Infrastructure\TotpTransactionSigner;
 use App\Modules\Shared\Concerns\ModuleServiceProvider;
+use App\Modules\Shared\Contracts\AuthorizationGateway;
+use App\Modules\Shared\Contracts\TransactionSigner;
 use Illuminate\Support\Facades\Gate;
 
 final class IdentityServiceProvider extends ModuleServiceProvider
@@ -27,6 +31,11 @@ final class IdentityServiceProvider extends ModuleServiceProvider
         return [
             IdentityDirectory::class => EloquentIdentityDirectory::class,
             OrganizationLifecycle::class => OrganizationLifecycleService::class,
+
+            // Ports Shared's HTTP layer declares and Identity answers. Shared
+            // may not depend on Identity, so the arrow is inverted here.
+            AuthorizationGateway::class => IdentityAuthorizationGateway::class,
+            TransactionSigner::class => TotpTransactionSigner::class,
         ];
     }
 

@@ -84,6 +84,45 @@ final readonly class DisputeService
     }
 
     /**
+     * The cases one organisation is a party to, newest first.
+     *
+     * Both sides are returned: §13.9's «پرونده‌های من» screen shows the cases a
+     * member filed and the cases filed against them in one list, and a member
+     * who could not see a claim against them could not answer it.
+     *
+     * @return array<int, DisputeModel>
+     */
+    public function listForOrganization(int $organizationId, int $limit = 100): array
+    {
+        return DisputeModel::query()
+            ->where(static function ($query) use ($organizationId): void {
+                $query->where('claimant_org_id', $organizationId)
+                    ->orWhere('respondent_org_id', $organizationId);
+            })
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get()
+            ->all();
+    }
+
+    /**
+     * A single case by id, WITHOUT any party filter.
+     *
+     * The party check is deliberately left to the caller rather than folded in
+     * here, because the HTTP layer needs the two organisation ids to decide
+     * between 404 and a legitimate read — see ApiController::partyOrNotFound().
+     * Every mutating method below re-asserts party membership itself, so a
+     * caller cannot turn this into a way to act on a stranger's case.
+     */
+    public function find(int $disputeId): ?DisputeModel
+    {
+        /** @var ?DisputeModel $dispute */
+        $dispute = DisputeModel::query()->whereKey($disputeId)->first();
+
+        return $dispute;
+    }
+
+    /**
      * §13.6 مرحله ۱ option ۱ — the respondent accepts the claim in full.
      *
      * No reputation penalty follows from accepting: «پذیرش سریع اشتباه خود —

@@ -12,10 +12,12 @@ use App\Modules\Reputation\Console\RecomputeReputationCommand;
 use App\Modules\Reputation\Contracts\CounterpartyCounter;
 use App\Modules\Reputation\Contracts\ReputationDirectory;
 use App\Modules\Reputation\Infrastructure\RelationTableCounterpartyCounter;
+use App\Modules\Reputation\Infrastructure\ReputationVerificationTierDirectory;
 use App\Modules\Reputation\Listeners\UpdateStatsFromDispute;
 use App\Modules\Reputation\Listeners\UpdateStatsFromSettlement;
 use App\Modules\Reputation\Listeners\UpdateVerificationFlags;
 use App\Modules\Shared\Concerns\ModuleServiceProvider;
+use App\Modules\Shared\Contracts\VerificationTierDirectory;
 
 final class ReputationServiceProvider extends ModuleServiceProvider
 {
@@ -41,6 +43,10 @@ final class ReputationServiceProvider extends ModuleServiceProvider
     {
         return [
             ReputationDirectory::class => PublicProfileService::class,
+            // Shared's port; this is what makes `verification_tier` appear in
+            // the login response and in /auth/me without Identity importing
+            // Reputation.
+            VerificationTierDirectory::class => ReputationVerificationTierDirectory::class,
             // Swap this binding to move `distinct_counterparties` onto a
             // Counterparty API call without touching the recompute job.
             CounterpartyCounter::class => RelationTableCounterpartyCounter::class,

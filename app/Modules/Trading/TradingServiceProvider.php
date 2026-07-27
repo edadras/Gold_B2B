@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Trading;
 
+use App\Modules\Pricing\Contracts\InstrumentDirectory;
 use App\Modules\Pricing\Contracts\TradePrintSourceInterface;
 use App\Modules\Pricing\Events\CircuitBreakerTriggered;
 use App\Modules\Pricing\Events\NoPriceAvailable;
@@ -16,6 +17,7 @@ use App\Modules\Trading\Console\ExpireOrdersCommand;
 use App\Modules\Trading\Console\ExpireStaleRfqsCommand;
 use App\Modules\Trading\Console\HaltMarketCommand;
 use App\Modules\Trading\Console\OpenMarketCommand;
+use App\Modules\Trading\Infrastructure\Readers\EloquentInstrumentDirectory;
 use App\Modules\Trading\Infrastructure\Readers\EloquentTradeHistoryReader;
 use App\Modules\Trading\Infrastructure\Readers\EloquentTradePrintSource;
 use App\Modules\Trading\Infrastructure\Readers\EloquentTradingExposureReader;
@@ -48,6 +50,9 @@ final class TradingServiceProvider extends ModuleServiceProvider
             TradeHistoryReaderInterface::class => EloquentTradeHistoryReader::class,
             TradingExposureReaderInterface::class => EloquentTradingExposureReader::class,
             TradePrintSourceInterface::class => EloquentTradePrintSource::class,
+            // Pricing keys its rows on instrument_id but the API speaks codes,
+            // and the instruments table is ours.
+            InstrumentDirectory::class => EloquentInstrumentDirectory::class,
         ];
     }
 
