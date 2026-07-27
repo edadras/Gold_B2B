@@ -15,7 +15,7 @@ final readonly class LotMovementResult
 {
     /**
      * @param  list<int>  $deliveredLotIds  lots now owned by the receiver
-     * @param  list<int>  $retainedLotIds   split remainders left with the deliverer
+     * @param  list<int>  $retainedLotIds  split remainders left with the deliverer
      */
     public function __construct(
         public array $deliveredLotIds,

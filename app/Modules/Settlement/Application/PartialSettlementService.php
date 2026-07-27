@@ -60,7 +60,7 @@ final readonly class PartialSettlementService
         ?int $actorUserId = null,
     ): array {
         /** @var array{parent: SettlementModel, child: SettlementModel} $result */
-        $result = DB::transaction(function () use ($settlementId, $paidRial, $actorUserId): array {
+        $result = DB::transaction(function () use ($settlementId, $paidRial): array {
             $parent = $this->stateMachine->lock($settlementId);
 
             $this->assertSplittable($parent, $paidRial);

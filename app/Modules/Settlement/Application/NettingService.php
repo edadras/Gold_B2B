@@ -664,12 +664,28 @@ final readonly class NettingService
     }
 
     /**
-     * ASSETS_LOCKED → NETTING_QUEUE, the alternative route of §5.2. A
-     * settlement already sitting in PAYMENT_PENDING has no edge back, so it is
-     * refused here rather than silently skipped.
+     * ASSETS_LOCKED → NETTING_QUEUE, the alternative route out of §5.2.
+     *
+     * Note that the road only runs one way. §2.4 gives NETTING_QUEUE an edge
+     * back to PAYMENT_PENDING — that is the fallback a cancelled batch uses —
+     * but PAYMENT_PENDING has no edge to NETTING_QUEUE. A settlement that has
+     * fallen back to gross settlement stays there; it is not swept into
+     * tomorrow's batch behind the members' backs. Refused loudly here rather
+     * than silently skipped, so an operator building a batch is told which
+     * obligation is no longer eligible.
      */
     private function queueForNetting(SettlementModel $settlement, int $batchId): void
     {
+        $queueable = [SettlementStatus::ASSETS_LOCKED, SettlementStatus::NETTING_QUEUE];
+
+        if (! in_array($settlement->status, $queueable, true)) {
+            throw new OperationNotPermittedException(sprintf(
+                'Settlement %s is %s and can no longer join a netting batch',
+                $settlement->settlement_code,
+                $settlement->status->value,
+            ));
+        }
+
         if ($settlement->status !== SettlementStatus::NETTING_QUEUE) {
             $this->stateMachine->transition(
                 (int) $settlement->id,

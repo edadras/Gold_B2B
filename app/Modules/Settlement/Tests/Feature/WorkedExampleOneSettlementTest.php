@@ -17,6 +17,7 @@ use App\Modules\Settlement\Domain\SettlementStatus;
 use App\Modules\Settlement\Infrastructure\Models\GoldTransferModel;
 use App\Modules\Settlement\Infrastructure\Models\PaymentModel;
 use App\Modules\Settlement\Tests\Support\SettlementTestCase;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -322,6 +323,6 @@ final class WorkedExampleOneSettlementTest extends SettlementTestCase
 
     private function entryCount(): int
     {
-        return (int) \Illuminate\Support\Facades\DB::table('ledger_entries')->count();
+        return (int) DB::table('ledger_entries')->count();
     }
 }

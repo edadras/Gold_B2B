@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Settlement\Tests\Feature;
 
+use App\Modules\Ledger\Domain\Bucket;
 use App\Modules\Settlement\Application\SettlementStateMachine;
 use App\Modules\Settlement\Domain\ActorType;
 use App\Modules\Settlement\Domain\SettlementStatus;
@@ -240,9 +241,9 @@ final class SettlementStateMachineTest extends SettlementTestCase
         );
 
         $fresh = $settlement->fresh();
-        $this->assertSame(\App\Modules\Ledger\Domain\Bucket::IN_DISPUTE->value, $fresh->held_bucket);
-        $this->assertSame(100_000, $this->goldBalance(self::SELLER, \App\Modules\Ledger\Domain\Bucket::IN_DISPUTE));
-        $this->assertSame(0, $this->goldBalance(self::SELLER, \App\Modules\Ledger\Domain\Bucket::IN_SETTLEMENT));
+        $this->assertSame(Bucket::IN_DISPUTE->value, $fresh->held_bucket);
+        $this->assertSame(100_000, $this->goldBalance(self::SELLER, Bucket::IN_DISPUTE));
+        $this->assertSame(0, $this->goldBalance(self::SELLER, Bucket::IN_SETTLEMENT));
 
         // Dispute resolved in the buyer's favour: the settlement goes through.
         $machine->transition(
@@ -251,7 +252,7 @@ final class SettlementStateMachineTest extends SettlementTestCase
             TransitionContext::staff(9_002, 'Dispute resolved — settlement stands'),
         );
 
-        $this->assertSame(0, $this->goldBalance(self::SELLER, \App\Modules\Ledger\Domain\Bucket::IN_DISPUTE));
+        $this->assertSame(0, $this->goldBalance(self::SELLER, Bucket::IN_DISPUTE));
         $this->assertSame(100_000, $this->goldBalance(self::BUYER));
         $this->assertLedgerConserved();
     }

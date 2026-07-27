@@ -7,7 +7,10 @@ namespace App\Modules\Settlement\Tests\Feature;
 use App\Modules\Ledger\Domain\AssetType;
 use App\Modules\Ledger\Domain\Bucket;
 use App\Modules\Ledger\Domain\SystemAccountCode;
+use App\Modules\Settlement\Application\Commands\OpenSettlementCommand;
 use App\Modules\Settlement\Application\NettingService;
+use App\Modules\Settlement\Application\OpenSettlementService;
+use App\Modules\Settlement\Domain\Exceptions\NettingNotAcceptedException;
 use App\Modules\Settlement\Domain\NettingBatchStatus;
 use App\Modules\Settlement\Domain\NettingType;
 use App\Modules\Settlement\Domain\SettlementStatus;
@@ -257,7 +260,7 @@ final class WorkedExampleThreeNettingTest extends SettlementTestCase
 
         $this->assertSame([self::C], $netting->pendingParticipants((int) $batch->id));
 
-        $this->expectException(\App\Modules\Settlement\Domain\Exceptions\NettingNotAcceptedException::class);
+        $this->expectException(NettingNotAcceptedException::class);
 
         $netting->execute((int) $batch->id);
     }
@@ -279,9 +282,9 @@ final class WorkedExampleThreeNettingTest extends SettlementTestCase
             $this->reserveForTrade($tradeId, $from, $to, $amount, 0);
 
             $settlements[] = $this->app->make(
-                \App\Modules\Settlement\Application\OpenSettlementService::class
+                OpenSettlementService::class
             )->open(
-                \App\Modules\Settlement\Application\Commands\OpenSettlementCommand::forTrade(
+                OpenSettlementCommand::forTrade(
                     tradeId: $tradeId,
                     buyerOrganizationId: $to,
                     sellerOrganizationId: $from,

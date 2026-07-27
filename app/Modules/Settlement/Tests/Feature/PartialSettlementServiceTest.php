@@ -22,10 +22,11 @@ use PHPUnit\Framework\Attributes\Test;
  * 20 bn, about 51 %. Proportionally that buys 254.8 g and the remainder becomes
  * a child settlement.
  *
- *   floor(500,000 mg × 20,000,000,000 / 39,240,000,000) = 254,842 mg
+ *   floor(500,000 mg × 20,000,000,000 / 39,240,000,000) = 254,841 mg
  *
- * which is the 254.8 g the document quotes, to the milligram the integer
- * arithmetic can actually justify.
+ * 254.841 g — the document's 254.8 g resolved to the milligram. Floor and not
+ * round: the buyer gets no more gold than they paid for, and the fraction the
+ * division leaves behind stays with the remainder rather than being invented.
  */
 final class PartialSettlementServiceTest extends SettlementTestCase
 {
@@ -43,7 +44,7 @@ final class PartialSettlementServiceTest extends SettlementTestCase
 
     private const PAID_RIAL = 20_000_000_000;
 
-    private const EXPECTED_DELIVERED_MG = 254_842;
+    private const EXPECTED_DELIVERED_MG = 254_841;
 
     protected function setUp(): void
     {
