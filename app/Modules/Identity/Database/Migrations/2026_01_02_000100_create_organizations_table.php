@@ -50,6 +50,11 @@ return new class extends Migration
             $table->string('email', 191)->nullable();
             $table->string('website', 191)->nullable();
 
+            // The operator's own staff live in a single organisation flagged
+            // here. It is the only place a PLATFORM_* role may be granted, and
+            // it never trades or holds balances.
+            $table->boolean('is_platform')->default(false);
+
             $table->enum('risk_level', RiskLevel::values())->default(RiskLevel::MEDIUM->value);
             $table->enum('compliance_state', ComplianceState::values())
                 ->default(ComplianceState::NORMAL->value);
@@ -68,6 +73,7 @@ return new class extends Migration
             $table->index('status', 'idx_organizations_status');
             $table->index('city', 'idx_organizations_city');
             $table->index('risk_level', 'idx_organizations_risk');
+            $table->index('is_platform', 'idx_organizations_platform');
         });
     }
 

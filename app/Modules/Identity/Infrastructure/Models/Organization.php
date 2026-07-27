@@ -53,6 +53,7 @@ class Organization extends Model
             'status' => OrganizationStatus::class,
             'risk_level' => RiskLevel::class,
             'compliance_state' => ComplianceState::class,
+            'is_platform' => 'boolean',
             'national_id_enc' => 'encrypted',
             'legal_id_enc' => 'encrypted',
             'established_at' => 'date',
