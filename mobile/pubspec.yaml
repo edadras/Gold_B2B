@@ -1,0 +1,91 @@
+name: gold_b2b
+description: "Gold B2B — Flutter client for the inter-dealer gold trading platform."
+publish_to: "none"
+
+# The build number is bumped by CI; the semver part is the client version that
+# gets sent in the X-Client-Version header (see AppConfig.clientVersion).
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+# ---------------------------------------------------------------------------
+# Dependency policy
+#
+# This app handles money. Every package here is on the critical path of a
+# financial transaction, so the list is deliberately short and deliberately
+# free of code generators: there is no build_runner step, no freezed, no
+# json_serializable, no riverpod_generator. All fromJson/toJson/copyWith and
+# all providers are hand written. Adding a codegen dependency means every
+# developer and every CI job now needs a working `dart run build_runner build`
+# before the app compiles — do not add one without a very good reason.
+# ---------------------------------------------------------------------------
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State management. Non-generated API only: StateNotifierProvider,
+  # FutureProvider, Provider, StreamProvider.
+  flutter_riverpod: ^2.5.1
+
+  # Networking.
+  dio: ^5.4.0
+
+  # Routing / deep links.
+  go_router: ^14.0.0
+
+  # Token storage (Keychain / EncryptedSharedPreferences).
+  flutter_secure_storage: ^9.0.0
+
+  # Number and date formatting primitives. NOTE: intl is used for locale
+  # plumbing and NEVER for parsing or formatting money or weight — those go
+  # through shared/models/numeric_input.dart, which is integer-only.
+  intl: ^0.19.0
+
+  # Jalali calendar.
+  shamsi_date: ^1.0.0
+
+  # Biometric confirmation of high-value operations.
+  local_auth: ^2.2.0
+
+  # Price charts.
+  fl_chart: ^0.68.0
+
+  # QR scanning for lot authenticity verification.
+  mobile_scanner: ^5.0.0
+
+  # Realtime. We speak the Pusher wire protocol against Laravel Reverb over a
+  # raw socket rather than pulling in pusher_channels_flutter, because that
+  # package ships two native SDKs and gives us no control over the reconnect
+  # semantics the docs require (see core/realtime/websocket_service.dart).
+  web_socket_channel: ^2.4.0
+
+  # SHA-256 for certificate pinning fingerprints.
+  crypto: ^3.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
+
+  fonts:
+    # Vazirmatn is the house font for Persian UI. The .ttf files are NOT in the
+    # repository — see mobile/README.md "Fonts" for the download step. Until
+    # they are added, comment this block out or the build will fail.
+    - family: Vazirmatn
+      fonts:
+        - asset: assets/fonts/Vazirmatn-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Vazirmatn-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Vazirmatn-Bold.ttf
+          weight: 700

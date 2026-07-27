@@ -1,0 +1,95 @@
+# Local development topology.
+#
+# This mirrors the shape described in docs/09-operations/01-deployment.md but at
+# a single-node scale: one app container, one worker, the datastores, and the
+# WebSocket server. Production splits workers by queue priority and runs a MySQL
+# replica — see that document before deploying anything from here.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "8000:8000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      REDIS_HOST: redis
+    command: php artisan serve --host=0.0.0.0 --port=8000
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      DB_HOST: mysql
+      REDIS_HOST: redis
+    # Settlement is listed first so it drains ahead of lower-priority queues.
+    command: >
+      php artisan queue:work redis
+      --queue=settlement,ledger-sync,broadcast,notification,accounting,risk,reporting,default
+      --tries=3 --backoff=5,15,60 --max-time=3600
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      REDIS_HOST: redis
+    # Exactly one scheduler instance may run, or scheduled jobs double-fire.
+    command: php artisan schedule:work
+
+  mysql:
+    image: mysql:8.0
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_0900_ai_ci
+      --innodb-flush-log-at-trx-commit=1
+      --innodb-lock-wait-timeout=10
+      --innodb-print-all-deadlocks=ON
+      --transaction-isolation=REPEATABLE-READ
+    environment:
+      MYSQL_DATABASE: goldb2b
+      MYSQL_USER: goldb2b
+      MYSQL_PASSWORD: goldb2b
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  mysql-data:
+  redis-data:
