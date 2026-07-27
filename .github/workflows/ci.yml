@@ -60,6 +60,17 @@ jobs:
           DB_USERNAME: goldb2b
           DB_PASSWORD: goldb2b
 
+      - name: OpenAPI spec is current
+        # The spec is checked in so it can be diffed and used to generate a
+        # client before the server runs; this fails if someone added a route
+        # without regenerating it.
+        run: php artisan openapi:generate --check
+        env:
+          DB_HOST: 127.0.0.1
+          DB_DATABASE: goldb2b_test
+          DB_USERNAME: goldb2b
+          DB_PASSWORD: goldb2b
+
       - name: Test suite
         run: vendor/bin/phpunit
         env:

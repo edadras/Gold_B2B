@@ -1,0 +1,4555 @@
+openapi: 3.1.0
+info:
+  title: 'Gold B2B API'
+  version: 1.0.0
+  description: |-
+    Inter-dealer trading, settlement and custody for melted gold.
+
+    Conventions that apply to every endpoint are documented in
+    docs/05-api/01-conventions.md and summarised here:
+
+    * All weights are integer milligrams of FINE gold. All money is integer rial.
+      There are no decimal or floating point quantities anywhere in this API.
+    * Purity is an integer in ten-thousandths: market purity 995 is 9950.
+    * Timestamps are ISO-8601 in UTC.
+    * Every state-changing financial request requires an `Idempotency-Key` header
+      carrying a UUID. Retrying with the same key replays the stored response
+      rather than repeating the action.
+    * High-value operations additionally require `X-Transaction-Signature`, a TOTP
+      code, and that check runs BEFORE the idempotency key is recorded so a
+      corrected retry is not answered from cache.
+  contact:
+    name: 'Gold B2B platform team'
+servers:
+  - url: /api/v1
+    description: 'Versioned API root'
+security:
+  -
+    bearerAuth: {}
+tags:
+  - name: accounting
+  - name: auth
+  - name: balances
+  - name: counterparties
+  - name: devices
+  - name: disputes
+  - name: health
+  - name: instruments
+  - name: ledger
+  - name: lots
+  - name: market
+  - name: members
+  - name: meta
+  - name: netting-batches
+  - name: notifications
+  - name: openapi.json
+  - name: orders
+  - name: organization
+  - name: otc-offers
+  - name: price-alerts
+  - name: reports
+  - name: reputation
+  - name: rfq-quotes
+  - name: rfqs
+  - name: risk
+  - name: settlements
+  - name: vault
+  - name: vaults
+  - name: verify
+paths:
+  /accounting/export:
+    get:
+      tags:
+        - accounting
+      summary: 'Export — accounting'
+      operationId: getAccountingExport
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /accounting/journal:
+    get:
+      tags:
+        - accounting
+      summary: 'Index — accounting'
+      operationId: getAccountingJournal
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /accounting/unrealized-pnl:
+    get:
+      tags:
+        - accounting
+      summary: 'Show — accounting'
+      operationId: getAccountingUnrealizedPnl
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /auth/2fa:
+    delete:
+      tags:
+        - auth
+      summary: 'Disable — auth'
+      operationId: deleteAuth2fa
+      responses:
+        204:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      description: 'Requires a re-signed transaction: send a current TOTP code in `X-Transaction-Signature`.'
+      parameters:
+        - $ref: '#/components/parameters/TransactionSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /auth/2fa/confirm:
+    post:
+      tags:
+        - auth
+      summary: 'Confirm — auth'
+      operationId: postAuth2faConfirm
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /auth/2fa/enable:
+    post:
+      tags:
+        - auth
+      summary: 'Enable — auth'
+      operationId: postAuth2faEnable
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /auth/login:
+    post:
+      tags:
+        - auth
+      summary: 'Login — auth'
+      operationId: postAuthLogin
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      security: {}
+  /auth/login/2fa:
+    post:
+      tags:
+        - auth
+      summary: 'Login Two Factor — auth'
+      operationId: postAuthLogin2fa
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      security: {}
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      summary: 'Logout — auth'
+      operationId: postAuthLogout
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /auth/logout-all:
+    post:
+      tags:
+        - auth
+      summary: 'Logout All — auth'
+      operationId: postAuthLogoutAll
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /auth/me:
+    get:
+      tags:
+        - auth
+      summary: 'Me — auth'
+      operationId: getAuthMe
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /auth/otp/send:
+    post:
+      tags:
+        - auth
+      summary: 'Send Otp — auth'
+      operationId: postAuthOtpSend
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      security: {}
+  /auth/otp/verify:
+    post:
+      tags:
+        - auth
+      summary: 'Verify Otp — auth'
+      operationId: postAuthOtpVerify
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      security: {}
+  /auth/password:
+    put:
+      tags:
+        - auth
+      summary: 'Change Password — auth'
+      operationId: putAuthPassword
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /auth/password/forgot:
+    post:
+      tags:
+        - auth
+      summary: 'Forgot Password — auth'
+      operationId: postAuthPasswordForgot
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      security: {}
+  /auth/password/reset:
+    post:
+      tags:
+        - auth
+      summary: 'Reset Password — auth'
+      operationId: postAuthPasswordReset
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      security: {}
+  /auth/refresh:
+    post:
+      tags:
+        - auth
+      summary: 'Refresh — auth'
+      operationId: postAuthRefresh
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      security: {}
+  /auth/register:
+    post:
+      tags:
+        - auth
+      summary: 'Register — auth'
+      operationId: postAuthRegister
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      security: {}
+  /auth/sessions:
+    get:
+      tags:
+        - auth
+      summary: 'Index — auth'
+      operationId: getAuthSessions
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/auth/sessions/{session}':
+    delete:
+      tags:
+        - auth
+      summary: 'Destroy — auth'
+      operationId: deleteAuthSessionsSession
+      responses:
+        204:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: session
+        in: path
+        required: true
+        schema:
+          type: string
+  /balances:
+    get:
+      tags:
+        - balances
+      summary: 'Index — balances'
+      operationId: getBalances
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /balances/gold:
+    get:
+      tags:
+        - balances
+      summary: 'Gold — balances'
+      operationId: getBalancesGold
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /balances/rial:
+    get:
+      tags:
+        - balances
+      summary: 'Rial — balances'
+      operationId: getBalancesRial
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /counterparties:
+    get:
+      tags:
+        - counterparties
+      summary: 'Index — counterparties'
+      operationId: getCounterparties
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/counterparties/{counterparty}':
+    get:
+      tags:
+        - counterparties
+      summary: 'Show — counterparties'
+      operationId: getCounterpartiesCounterparty
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: counterparty
+        in: path
+        required: true
+        schema:
+          type: string
+  '/counterparties/{counterparty}/confirm-balance':
+    post:
+      tags:
+        - counterparties
+      summary: 'Confirm Balance — counterparties'
+      operationId: postCounterpartiesCounterpartyConfirmBalance
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: counterparty
+        in: path
+        required: true
+        schema:
+          type: string
+  '/counterparties/{counterparty}/limits':
+    put:
+      tags:
+        - counterparties
+      summary: 'Update Limits — counterparties'
+      operationId: putCounterpartiesCounterpartyLimits
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: counterparty
+        in: path
+        required: true
+        schema:
+          type: string
+  '/counterparties/{counterparty}/settings':
+    put:
+      tags:
+        - counterparties
+      summary: 'Update Settings — counterparties'
+      operationId: putCounterpartiesCounterpartySettings
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: counterparty
+        in: path
+        required: true
+        schema:
+          type: string
+  '/counterparties/{counterparty}/statement':
+    get:
+      tags:
+        - counterparties
+      summary: 'Statement — counterparties'
+      operationId: getCounterpartiesCounterpartyStatement
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    parameters:
+      -
+        name: counterparty
+        in: path
+        required: true
+        schema:
+          type: string
+  /devices:
+    get:
+      tags:
+        - devices
+      summary: 'Index — devices'
+      operationId: getDevices
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - devices
+      summary: 'Store — devices'
+      operationId: postDevices
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/devices/{token}':
+    delete:
+      tags:
+        - devices
+      summary: 'Destroy — devices'
+      operationId: deleteDevicesToken
+      responses:
+        204:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: token
+        in: path
+        required: true
+        schema:
+          type: string
+  /disputes:
+    get:
+      tags:
+        - disputes
+      summary: 'Index — disputes'
+      operationId: getDisputes
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - disputes
+      summary: 'Store — disputes'
+      operationId: postDisputes
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/disputes/{dispute}':
+    get:
+      tags:
+        - disputes
+      summary: 'Show — disputes'
+      operationId: getDisputesDispute
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: dispute
+        in: path
+        required: true
+        schema:
+          type: string
+  '/disputes/{dispute}/accept':
+    post:
+      tags:
+        - disputes
+      summary: 'Accept — disputes'
+      operationId: postDisputesDisputeAccept
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      description: 'Requires a re-signed transaction: send a current TOTP code in `X-Transaction-Signature`.'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TransactionSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: dispute
+        in: path
+        required: true
+        schema:
+          type: string
+  '/disputes/{dispute}/escalate':
+    post:
+      tags:
+        - disputes
+      summary: 'Escalate — disputes'
+      operationId: postDisputesDisputeEscalate
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: dispute
+        in: path
+        required: true
+        schema:
+          type: string
+  '/disputes/{dispute}/evidences':
+    get:
+      tags:
+        - disputes
+      summary: 'Index — disputes'
+      operationId: getDisputesDisputeEvidences
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    parameters:
+      -
+        name: dispute
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - disputes
+      summary: 'Store — disputes'
+      operationId: postDisputesDisputeEvidences
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/disputes/{dispute}/reply':
+    post:
+      tags:
+        - disputes
+      summary: 'Reply — disputes'
+      operationId: postDisputesDisputeReply
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: dispute
+        in: path
+        required: true
+        schema:
+          type: string
+  '/disputes/{dispute}/withdraw':
+    post:
+      tags:
+        - disputes
+      summary: 'Withdraw — disputes'
+      operationId: postDisputesDisputeWithdraw
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: dispute
+        in: path
+        required: true
+        schema:
+          type: string
+  /health:
+    get:
+      tags:
+        - health
+      summary: 'Shallow — health'
+      operationId: getHealth
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      security: {}
+  /health/deep:
+    get:
+      tags:
+        - health
+      summary: 'Deep — health'
+      operationId: getHealthDeep
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /instruments:
+    get:
+      tags:
+        - instruments
+      summary: 'Instruments — instruments'
+      operationId: getInstruments
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/instruments/{code}':
+    get:
+      tags:
+        - instruments
+      summary: 'Instrument — instruments'
+      operationId: getInstrumentsCode
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: code
+        in: path
+        required: true
+        schema:
+          type: string
+  '/ledger/entries/{entry}':
+    get:
+      tags:
+        - ledger
+      summary: 'Show — ledger'
+      operationId: getLedgerEntriesEntry
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: entry
+        in: path
+        required: true
+        schema:
+          type: string
+  /ledger/gold:
+    get:
+      tags:
+        - ledger
+      summary: 'Gold — ledger'
+      operationId: getLedgerGold
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /ledger/rial:
+    get:
+      tags:
+        - ledger
+      summary: 'Rial — ledger'
+      operationId: getLedgerRial
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /lots:
+    get:
+      tags:
+        - lots
+      summary: 'Index — lots'
+      operationId: getLots
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /lots/merge:
+    post:
+      tags:
+        - lots
+      summary: 'Merge — lots'
+      operationId: postLotsMerge
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      description: 'Requires a re-signed transaction: send a current TOTP code in `X-Transaction-Signature`.'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TransactionSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/lots/{lot}':
+    get:
+      tags:
+        - lots
+      summary: 'Show — lots'
+      operationId: getLotsLot
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: lot
+        in: path
+        required: true
+        schema:
+          type: string
+  '/lots/{lot}/assays':
+    get:
+      tags:
+        - lots
+      summary: 'Assays — lots'
+      operationId: getLotsLotAssays
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    parameters:
+      -
+        name: lot
+        in: path
+        required: true
+        schema:
+          type: string
+  '/lots/{lot}/lineage':
+    get:
+      tags:
+        - lots
+      summary: 'Lineage — lots'
+      operationId: getLotsLotLineage
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    parameters:
+      -
+        name: lot
+        in: path
+        required: true
+        schema:
+          type: string
+  '/lots/{lot}/send-to-assay':
+    post:
+      tags:
+        - lots
+      summary: 'Send To Assay — lots'
+      operationId: postLotsLotSendToAssay
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: lot
+        in: path
+        required: true
+        schema:
+          type: string
+  '/lots/{lot}/split':
+    post:
+      tags:
+        - lots
+      summary: 'Split — lots'
+      operationId: postLotsLotSplit
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      description: 'Requires a re-signed transaction: send a current TOTP code in `X-Transaction-Signature`.'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TransactionSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: lot
+        in: path
+        required: true
+        schema:
+          type: string
+  '/market/candles/{code}':
+    get:
+      tags:
+        - market
+      summary: 'Candles — market'
+      operationId: getMarketCandlesCode
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: code
+        in: path
+        required: true
+        schema:
+          type: string
+  '/market/depth/{code}':
+    get:
+      tags:
+        - market
+      summary: 'Depth — market'
+      operationId: getMarketDepthCode
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: code
+        in: path
+        required: true
+        schema:
+          type: string
+  /market/quotes:
+    get:
+      tags:
+        - market
+      summary: 'Quotes — market'
+      operationId: getMarketQuotes
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/market/quotes/{code}':
+    get:
+      tags:
+        - market
+      summary: 'Quote — market'
+      operationId: getMarketQuotesCode
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: code
+        in: path
+        required: true
+        schema:
+          type: string
+  /market/reference-price:
+    get:
+      tags:
+        - market
+      summary: 'Reference Price — market'
+      operationId: getMarketReferencePrice
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/market/sessions/{code}':
+    get:
+      tags:
+        - market
+      summary: 'Session — market'
+      operationId: getMarketSessionsCode
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: code
+        in: path
+        required: true
+        schema:
+          type: string
+  '/market/trades/{code}':
+    get:
+      tags:
+        - market
+      summary: 'Trades — market'
+      operationId: getMarketTradesCode
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: code
+        in: path
+        required: true
+        schema:
+          type: string
+  /members/search:
+    get:
+      tags:
+        - members
+      summary: 'Search — members'
+      operationId: getMembersSearch
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/members/{member}/reputation':
+    get:
+      tags:
+        - members
+      summary: 'Show — members'
+      operationId: getMembersMemberReputation
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    parameters:
+      -
+        name: member
+        in: path
+        required: true
+        schema:
+          type: string
+  /meta/calendar:
+    get:
+      tags:
+        - meta
+      summary: 'Calendar — meta'
+      operationId: getMetaCalendar
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /meta/enums:
+    get:
+      tags:
+        - meta
+      summary: 'Enums — meta'
+      operationId: getMetaEnums
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /meta/settings:
+    get:
+      tags:
+        - meta
+      summary: 'Settings — meta'
+      operationId: getMetaSettings
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /netting-batches:
+    get:
+      tags:
+        - netting-batches
+      summary: 'Index — netting-batches'
+      operationId: getNettingBatches
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/netting-batches/{batch}':
+    get:
+      tags:
+        - netting-batches
+      summary: 'Show — netting-batches'
+      operationId: getNettingBatchesBatch
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: batch
+        in: path
+        required: true
+        schema:
+          type: string
+  '/netting-batches/{batch}/accept':
+    post:
+      tags:
+        - netting-batches
+      summary: 'Accept — netting-batches'
+      operationId: postNettingBatchesBatchAccept
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      description: 'Requires a re-signed transaction: send a current TOTP code in `X-Transaction-Signature`.'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TransactionSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: batch
+        in: path
+        required: true
+        schema:
+          type: string
+  '/netting-batches/{batch}/reject':
+    post:
+      tags:
+        - netting-batches
+      summary: 'Reject — netting-batches'
+      operationId: postNettingBatchesBatchReject
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: batch
+        in: path
+        required: true
+        schema:
+          type: string
+  /notifications:
+    get:
+      tags:
+        - notifications
+      summary: 'Index — notifications'
+      operationId: getNotifications
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /notifications/preferences:
+    get:
+      tags:
+        - notifications
+      summary: 'Index — notifications'
+      operationId: getNotificationsPreferences
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    put:
+      tags:
+        - notifications
+      summary: 'Update — notifications'
+      operationId: putNotificationsPreferences
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /notifications/read-all:
+    post:
+      tags:
+        - notifications
+      summary: 'Mark All Read — notifications'
+      operationId: postNotificationsReadAll
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /notifications/unread-count:
+    get:
+      tags:
+        - notifications
+      summary: 'Unread Count — notifications'
+      operationId: getNotificationsUnreadCount
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/notifications/{notification}/read':
+    post:
+      tags:
+        - notifications
+      summary: 'Mark Read — notifications'
+      operationId: postNotificationsNotificationRead
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: notification
+        in: path
+        required: true
+        schema:
+          type: string
+  /openapi.json:
+    get:
+      tags:
+        - openapi.json
+      summary: 'Read openapi.json'
+      operationId: getOpenapi.json
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      security: {}
+  /orders:
+    get:
+      tags:
+        - orders
+      summary: 'Index — orders'
+      operationId: getOrders
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - orders
+      summary: 'Store — orders'
+      operationId: postOrders
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /orders/cancel-all:
+    post:
+      tags:
+        - orders
+      summary: 'Cancel All — orders'
+      operationId: postOrdersCancelAll
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/orders/{order}':
+    get:
+      tags:
+        - orders
+      summary: 'Show — orders'
+      operationId: getOrdersOrder
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: order
+        in: path
+        required: true
+        schema:
+          type: string
+  '/orders/{order}/cancel':
+    post:
+      tags:
+        - orders
+      summary: 'Cancel — orders'
+      operationId: postOrdersOrderCancel
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: order
+        in: path
+        required: true
+        schema:
+          type: string
+  '/orders/{order}/fills':
+    get:
+      tags:
+        - orders
+      summary: 'Fills — orders'
+      operationId: getOrdersOrderFills
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    parameters:
+      -
+        name: order
+        in: path
+        required: true
+        schema:
+          type: string
+  /organization:
+    get:
+      tags:
+        - organization
+      summary: 'Show — organization'
+      operationId: getOrganization
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    put:
+      tags:
+        - organization
+      summary: 'Update — organization'
+      operationId: putOrganization
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /organization/bank-accounts:
+    get:
+      tags:
+        - organization
+      summary: 'Index — organization'
+      operationId: getOrganizationBankAccounts
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - organization
+      summary: 'Store — organization'
+      operationId: postOrganizationBankAccounts
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      description: 'Requires a re-signed transaction: send a current TOTP code in `X-Transaction-Signature`.'
+      parameters:
+        - $ref: '#/components/parameters/TransactionSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/organization/bank-accounts/{bank_account}':
+    delete:
+      tags:
+        - organization
+      summary: 'Destroy — organization'
+      operationId: deleteOrganizationBankAccountsBankAccount
+      responses:
+        204:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      description: 'Requires a re-signed transaction: send a current TOTP code in `X-Transaction-Signature`.'
+      parameters:
+        - $ref: '#/components/parameters/TransactionSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: bank_account
+        in: path
+        required: true
+        schema:
+          type: string
+  /organization/documents:
+    get:
+      tags:
+        - organization
+      summary: 'Index — organization'
+      operationId: getOrganizationDocuments
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - organization
+      summary: 'Store — organization'
+      operationId: postOrganizationDocuments
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/organization/documents/{document}':
+    delete:
+      tags:
+        - organization
+      summary: 'Destroy — organization'
+      operationId: deleteOrganizationDocumentsDocument
+      responses:
+        204:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: document
+        in: path
+        required: true
+        schema:
+          type: string
+  /organization/kyc:
+    get:
+      tags:
+        - organization
+      summary: 'Show — organization'
+      operationId: getOrganizationKyc
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /organization/kyc/submit:
+    post:
+      tags:
+        - organization
+      summary: 'Submit — organization'
+      operationId: postOrganizationKycSubmit
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /organization/licenses:
+    get:
+      tags:
+        - organization
+      summary: 'Index — organization'
+      operationId: getOrganizationLicenses
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - organization
+      summary: 'Store — organization'
+      operationId: postOrganizationLicenses
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /organization/representatives:
+    get:
+      tags:
+        - organization
+      summary: 'Index — organization'
+      operationId: getOrganizationRepresentatives
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - organization
+      summary: 'Store — organization'
+      operationId: postOrganizationRepresentatives
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /organization/users:
+    get:
+      tags:
+        - organization
+      summary: 'Index — organization'
+      operationId: getOrganizationUsers
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - organization
+      summary: 'Store — organization'
+      operationId: postOrganizationUsers
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/organization/users/{user}':
+    delete:
+      tags:
+        - organization
+      summary: 'Destroy — organization'
+      operationId: deleteOrganizationUsersUser
+      responses:
+        204:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: user
+        in: path
+        required: true
+        schema:
+          type: string
+  '/organization/users/{user}/limits':
+    put:
+      tags:
+        - organization
+      summary: 'Update — organization'
+      operationId: putOrganizationUsersUserLimits
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: user
+        in: path
+        required: true
+        schema:
+          type: string
+  '/organization/users/{user}/roles':
+    put:
+      tags:
+        - organization
+      summary: 'Update Roles — organization'
+      operationId: putOrganizationUsersUserRoles
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: user
+        in: path
+        required: true
+        schema:
+          type: string
+  /otc-offers:
+    get:
+      tags:
+        - otc-offers
+      summary: 'Index — otc-offers'
+      operationId: getOtcOffers
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - otc-offers
+      summary: 'Store — otc-offers'
+      operationId: postOtcOffers
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/otc-offers/{offer}':
+    get:
+      tags:
+        - otc-offers
+      summary: 'Show — otc-offers'
+      operationId: getOtcOffersOffer
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: offer
+        in: path
+        required: true
+        schema:
+          type: string
+  '/otc-offers/{offer}/accept':
+    post:
+      tags:
+        - otc-offers
+      summary: 'Accept — otc-offers'
+      operationId: postOtcOffersOfferAccept
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: offer
+        in: path
+        required: true
+        schema:
+          type: string
+  '/otc-offers/{offer}/cancel':
+    post:
+      tags:
+        - otc-offers
+      summary: 'Cancel — otc-offers'
+      operationId: postOtcOffersOfferCancel
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: offer
+        in: path
+        required: true
+        schema:
+          type: string
+  '/otc-offers/{offer}/counter':
+    post:
+      tags:
+        - otc-offers
+      summary: 'Counter — otc-offers'
+      operationId: postOtcOffersOfferCounter
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: offer
+        in: path
+        required: true
+        schema:
+          type: string
+  '/otc-offers/{offer}/reject':
+    post:
+      tags:
+        - otc-offers
+      summary: 'Reject — otc-offers'
+      operationId: postOtcOffersOfferReject
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: offer
+        in: path
+        required: true
+        schema:
+          type: string
+  /price-alerts:
+    get:
+      tags:
+        - price-alerts
+      summary: 'Index — price-alerts'
+      operationId: getPriceAlerts
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - price-alerts
+      summary: 'Store — price-alerts'
+      operationId: postPriceAlerts
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/price-alerts/{alert}':
+    delete:
+      tags:
+        - price-alerts
+      summary: 'Destroy — price-alerts'
+      operationId: deletePriceAlertsAlert
+      responses:
+        204:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: alert
+        in: path
+        required: true
+        schema:
+          type: string
+  /reports/daily-profit:
+    get:
+      tags:
+        - reports
+      summary: 'Daily Profit — reports'
+      operationId: getReportsDailyProfit
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/reports/download/{token}':
+    get:
+      tags:
+        - reports
+      summary: 'Download — reports'
+      operationId: getReportsDownloadToken
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      security: {}
+    parameters:
+      -
+        name: token
+        in: path
+        required: true
+        schema:
+          type: string
+  /reports/export:
+    post:
+      tags:
+        - reports
+      summary: 'Store — reports'
+      operationId: postReportsExport
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /reports/exports:
+    get:
+      tags:
+        - reports
+      summary: 'Index — reports'
+      operationId: getReportsExports
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/reports/exports/{job}':
+    get:
+      tags:
+        - reports
+      summary: 'Show — reports'
+      operationId: getReportsExportsJob
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: job
+        in: path
+        required: true
+        schema:
+          type: string
+  /reports/fees:
+    get:
+      tags:
+        - reports
+      summary: 'Fees — reports'
+      operationId: getReportsFees
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /reports/gold-flow:
+    get:
+      tags:
+        - reports
+      summary: 'Gold Flow — reports'
+      operationId: getReportsGoldFlow
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /reports/inventory:
+    get:
+      tags:
+        - reports
+      summary: 'Inventory — reports'
+      operationId: getReportsInventory
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /reports/pnl:
+    get:
+      tags:
+        - reports
+      summary: 'Pnl — reports'
+      operationId: getReportsPnl
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /reports/rial-flow:
+    get:
+      tags:
+        - reports
+      summary: 'Rial Flow — reports'
+      operationId: getReportsRialFlow
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /reports/trades:
+    get:
+      tags:
+        - reports
+      summary: 'Trades — reports'
+      operationId: getReportsTrades
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /reports/trial-balance:
+    get:
+      tags:
+        - reports
+      summary: 'Show — reports'
+      operationId: getReportsTrialBalance
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /reputation/me:
+    get:
+      tags:
+        - reputation
+      summary: 'Me — reputation'
+      operationId: getReputationMe
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/rfq-quotes/{quote}/accept':
+    post:
+      tags:
+        - rfq-quotes
+      summary: 'Accept Quote — rfq-quotes'
+      operationId: postRfqQuotesQuoteAccept
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: quote
+        in: path
+        required: true
+        schema:
+          type: string
+  '/rfq-quotes/{quote}/withdraw':
+    post:
+      tags:
+        - rfq-quotes
+      summary: 'Withdraw Quote — rfq-quotes'
+      operationId: postRfqQuotesQuoteWithdraw
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: quote
+        in: path
+        required: true
+        schema:
+          type: string
+  /rfqs:
+    get:
+      tags:
+        - rfqs
+      summary: 'Index — rfqs'
+      operationId: getRfqs
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - rfqs
+      summary: 'Store — rfqs'
+      operationId: postRfqs
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /rfqs/inbox:
+    get:
+      tags:
+        - rfqs
+      summary: 'Inbox — rfqs'
+      operationId: getRfqsInbox
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/rfqs/{rfq}':
+    get:
+      tags:
+        - rfqs
+      summary: 'Show — rfqs'
+      operationId: getRfqsRfq
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: rfq
+        in: path
+        required: true
+        schema:
+          type: string
+  '/rfqs/{rfq}/cancel':
+    post:
+      tags:
+        - rfqs
+      summary: 'Cancel — rfqs'
+      operationId: postRfqsRfqCancel
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: rfq
+        in: path
+        required: true
+        schema:
+          type: string
+  '/rfqs/{rfq}/quotes':
+    get:
+      tags:
+        - rfqs
+      summary: 'Quotes — rfqs'
+      operationId: getRfqsRfqQuotes
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    parameters:
+      -
+        name: rfq
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags:
+        - rfqs
+      summary: 'Quote — rfqs'
+      operationId: postRfqsRfqQuotes
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /risk/collaterals:
+    get:
+      tags:
+        - risk
+      summary: 'Collaterals — risk'
+      operationId: getRiskCollaterals
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /risk/exposure:
+    get:
+      tags:
+        - risk
+      summary: 'Exposure — risk'
+      operationId: getRiskExposure
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /risk/limit-increase-request:
+    post:
+      tags:
+        - risk
+      summary: 'Store — risk'
+      operationId: postRiskLimitIncreaseRequest
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /risk/limits:
+    get:
+      tags:
+        - risk
+      summary: 'Limits — risk'
+      operationId: getRiskLimits
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /risk/profile:
+    get:
+      tags:
+        - risk
+      summary: 'Profile — risk'
+      operationId: getRiskProfile
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /settlements:
+    get:
+      tags:
+        - settlements
+      summary: 'Index — settlements'
+      operationId: getSettlements
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  /settlements/pending:
+    get:
+      tags:
+        - settlements
+      summary: 'Pending — settlements'
+      operationId: getSettlementsPending
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/settlements/{settlement}':
+    get:
+      tags:
+        - settlements
+      summary: 'Show — settlements'
+      operationId: getSettlementsSettlement
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+    parameters:
+      -
+        name: settlement
+        in: path
+        required: true
+        schema:
+          type: string
+  '/settlements/{settlement}/cancel':
+    post:
+      tags:
+        - settlements
+      summary: 'Cancel — settlements'
+      operationId: postSettlementsSettlementCancel
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: settlement
+        in: path
+        required: true
+        schema:
+          type: string
+  '/settlements/{settlement}/confirm-delivery':
+    post:
+      tags:
+        - settlements
+      summary: 'Confirm Delivery — settlements'
+      operationId: postSettlementsSettlementConfirmDelivery
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      description: 'Requires a re-signed transaction: send a current TOTP code in `X-Transaction-Signature`.'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TransactionSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: settlement
+        in: path
+        required: true
+        schema:
+          type: string
+  '/settlements/{settlement}/confirm-payment':
+    post:
+      tags:
+        - settlements
+      summary: 'Confirm Payment — settlements'
+      operationId: postSettlementsSettlementConfirmPayment
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      description: 'Requires a re-signed transaction: send a current TOTP code in `X-Transaction-Signature`.'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TransactionSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: settlement
+        in: path
+        required: true
+        schema:
+          type: string
+  '/settlements/{settlement}/declare-payment':
+    post:
+      tags:
+        - settlements
+      summary: 'Declare Payment — settlements'
+      operationId: postSettlementsSettlementDeclarePayment
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: settlement
+        in: path
+        required: true
+        schema:
+          type: string
+  '/settlements/{settlement}/events':
+    get:
+      tags:
+        - settlements
+      summary: 'Events — settlements'
+      operationId: getSettlementsSettlementEvents
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    parameters:
+      -
+        name: settlement
+        in: path
+        required: true
+        schema:
+          type: string
+  /vault/deposits:
+    get:
+      tags:
+        - vault
+      summary: 'Index — vault'
+      operationId: getVaultDeposits
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - vault
+      summary: 'Store — vault'
+      operationId: postVaultDeposits
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  /vault/withdrawals:
+    get:
+      tags:
+        - vault
+      summary: 'Index — vault'
+      operationId: getVaultWithdrawals
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+    post:
+      tags:
+        - vault
+      summary: 'Store — vault'
+      operationId: postVaultWithdrawals
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        409:
+          $ref: '#/components/responses/IdempotencyConflict'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      description: 'Requires a re-signed transaction: send a current TOTP code in `X-Transaction-Signature`.'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TransactionSignature'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+  '/vault/withdrawals/{operation}/approve':
+    post:
+      tags:
+        - vault
+      summary: 'Approve — vault'
+      operationId: postVaultWithdrawalsOperationApprove
+      responses:
+        201:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+    parameters:
+      -
+        name: operation
+        in: path
+        required: true
+        schema:
+          type: string
+  /vaults:
+    get:
+      tags:
+        - vaults
+      summary: 'Index — vaults'
+      operationId: getVaults
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        401:
+          $ref: '#/components/responses/Unauthenticated'
+        403:
+          $ref: '#/components/responses/Forbidden'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+  '/verify/{qr_token}':
+    get:
+      tags:
+        - verify
+      summary: 'Show — verify'
+      operationId: getVerifyQrToken
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Envelope'
+        422:
+          $ref: '#/components/responses/DomainError'
+        429:
+          $ref: '#/components/responses/RateLimited'
+      security: {}
+    parameters:
+      -
+        name: qr_token
+        in: path
+        required: true
+        schema:
+          type: string
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: 'A UUID minted by the client when the intent is formed, not when the request is sent. Reuse the same key on every retry of the same intent.'
+    TransactionSignature:
+      name: X-Transaction-Signature
+      in: header
+      required: true
+      schema:
+        type: string
+      description: 'Current TOTP code. Verified before the idempotency key is recorded.'
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 50
+        maximum: 200
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+      description: 'Opaque cursor from the previous response. Cursor paging is stable against concurrent inserts; offset paging is not.'
+  schemas:
+    Envelope:
+      type: object
+      properties:
+        data:
+          description: 'Resource or collection'
+        meta:
+          $ref: '#/components/schemas/Meta'
+        links:
+          type: object
+          nullable: true
+      required:
+        - data
+        - meta
+    Meta:
+      type: object
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        server_time:
+          type: string
+          format: date-time
+        count:
+          type: integer
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: INSUFFICIENT_GOLD
+            message:
+              type: string
+              description: 'Persian, safe to show a user'
+            details:
+              type: object
+              nullable: true
+            field_errors:
+              type: object
+              nullable: true
+          required:
+            - code
+            - message
+        meta:
+          $ref: '#/components/schemas/Meta'
+    FineWeight:
+      type: integer
+      format: int64
+      description: 'Milligrams of pure gold. 248750 is 248.750 g fine.'
+      example: 248750
+    Rial:
+      type: integer
+      format: int64
+      description: 'Whole rial. Never a decimal.'
+      example: 19521900000
+    Purity:
+      type: integer
+      minimum: 0
+      maximum: 10000
+      description: 'Ten-thousandths. Market purity 995 is 9950.'
+      example: 9950
+  responses:
+    DomainError:
+      description: 'A business rule refused the request'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthenticated:
+      description: 'Missing or expired token'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: 'Authenticated but not permitted, or the resource belongs to another organization'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: 'Too many requests'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    IdempotencyConflict:
+      description: 'An identical request is still in flight, or the key was reused with a different body'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
