@@ -35,6 +35,12 @@ return [
     // How many delivery rows /webhooks/{id}/deliveries returns (§3.13).
     'delivery_page_size' => 50,
 
+    // A member integrating one accounting package needs one endpoint; a handful
+    // covers a staging copy and a couple of departments. The cap exists so that
+    // a single event cannot fan out into an unbounded number of outbound
+    // requests, which is a denial-of-service amplifier pointed at ourselves.
+    'max_per_organization' => 10,
+
     // Deliveries older than this are pruned by webhooks:prune. The payload of a
     // trade is member data; it does not live in a debugging table forever.
     'delivery_retention_days' => 30,
@@ -70,4 +76,78 @@ return [
 
     // Response bodies are read only far enough to record an error message.
     'max_error_length' => 500,
+
+    /*
+     * ───────────────── Domain event class => §3.12 catalogue type ─────────────────
+     *
+     * The whole integration surface of this module, in one place, AS STRINGS.
+     *
+     * Webhook may depend on Shared and Identity only, so not one of these
+     * classes may be imported anywhere in the module. Keeping the map in config
+     * rather than in a class constant has three consequences, all wanted:
+     *
+     *   · Listeners\DispatchWebhooksForDomainEvent and WebhookServiceProvider
+     *     read the SAME list, so the set of events we subscribe to and the set
+     *     we know how to translate cannot drift apart;
+     *   · a module that is not deployed simply never fires its entry — the row
+     *     sits here inert and nothing breaks;
+     *   · a deployment can add or remove a producer without a code change, and
+     *     a test can register a double.
+     *
+     * Several ledger events map onto `balance.updated`: §3.12 gives members one
+     * balance event, and which internal movement caused it is visible in the
+     * payload's own fields rather than in a separate event type.
+     */
+    'event_map' => [
+        // معاملات
+        'App\Modules\Trading\Events\TradeExecuted' => 'trade.executed',
+        'App\Modules\Trading\Events\OrderFilled' => 'order.filled',
+        'App\Modules\Trading\Events\OrderPartiallyFilled' => 'order.partially_filled',
+        'App\Modules\Trading\Events\OrderCancelled' => 'order.cancelled',
+        'App\Modules\Trading\Events\OrderRejected' => 'order.rejected',
+
+        // تسویه
+        'App\Modules\Settlement\Events\SettlementOpened' => 'settlement.opened',
+        'App\Modules\Settlement\Events\PaymentDeclared' => 'settlement.payment_declared',
+        'App\Modules\Settlement\Events\PaymentConfirmed' => 'settlement.payment_confirmed',
+        'App\Modules\Settlement\Events\SettlementCompleted' => 'settlement.completed',
+        'App\Modules\Settlement\Events\SettlementOverdue' => 'settlement.overdue',
+        'App\Modules\Settlement\Events\SettlementCancelled' => 'settlement.cancelled',
+        'App\Modules\Settlement\Events\SettlementReversed' => 'settlement.reversed',
+
+        // دفتر
+        'App\Modules\Ledger\Events\TransferCompleted' => 'balance.updated',
+        'App\Modules\Ledger\Events\BalanceReserved' => 'balance.updated',
+        'App\Modules\Ledger\Events\ReservationReleased' => 'balance.updated',
+        'App\Modules\Ledger\Events\EntryReversed' => 'ledger.entry_created',
+
+        // طلای فیزیکی
+        'App\Modules\Custody\Events\GoldLotCreated' => 'lot.created',
+        'App\Modules\Custody\Events\OwnershipTransferred' => 'lot.ownership_transferred',
+        'App\Modules\Custody\Events\LotSplit' => 'lot.split',
+        'App\Modules\Custody\Events\LotsMerged' => 'lot.merged',
+        'App\Modules\Custody\Events\AssayRecorded' => 'lot.assay_recorded',
+        'App\Modules\Custody\Events\LotEnteredVault' => 'lot.deposited',
+        'App\Modules\Custody\Events\LotLeftVault' => 'lot.withdrawn',
+
+        // RFQ / OTC
+        'App\Modules\Trading\Events\RfqCreated' => 'rfq.received',
+        'App\Modules\Trading\Events\RfqQuoted' => 'rfq.quoted',
+        'App\Modules\Trading\Events\RfqAccepted' => 'rfq.accepted',
+        'App\Modules\Trading\Events\OtcOfferCreated' => 'otc.offer_received',
+        'App\Modules\Trading\Events\OtcOfferAccepted' => 'otc.offer_accepted',
+
+        // حساب
+        'App\Modules\Identity\Events\OrganizationStatusChanged' => 'organization.status_changed',
+        'App\Modules\Kyc\Events\LicenseExpiring' => 'license.expiring',
+        'App\Modules\Risk\Events\RiskProfileChanged' => 'limit.changed',
+
+        // اختلاف
+        'App\Modules\Dispute\Events\DisputeOpened' => 'dispute.opened',
+        'App\Modules\Dispute\Events\DisputeResolved' => 'dispute.resolved',
+
+        // تهاتر
+        'App\Modules\Settlement\Events\NettingProposed' => 'netting.proposed',
+        'App\Modules\Settlement\Events\NettingExecuted' => 'netting.executed',
+    ],
 ];

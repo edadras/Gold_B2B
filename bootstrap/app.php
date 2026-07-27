@@ -20,6 +20,27 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
+    /*
+     * The Broadcasting module's provider.
+     *
+     * It belongs in bootstrap/providers.php with every other module provider,
+     * but that file enumerates its modules by hand and is off limits to this
+     * change, so the provider is merged in here instead — RegisterProviders
+     * appends it to the same `app.providers` list, it just arrives from a
+     * different direction. Guarded by class_exists so a deployment slice
+     * without the module still boots.
+     *
+     * It registers routes/channels.php itself rather than through
+     * withRouting(channels: ...): that helper also calls Broadcast::routes(),
+     * which mounts the framework's session-authenticated /broadcasting/auth
+     * next to the Sanctum-authenticated POST /api/v1/broadcasting/auth the
+     * module owns — two doors, two guards, one set of private channels.
+     */
+    ->withProviders(array_filter([
+        class_exists(App\Modules\Broadcasting\BroadcastingServiceProvider::class)
+            ? App\Modules\Broadcasting\BroadcastingServiceProvider::class
+            : null,
+    ]))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',

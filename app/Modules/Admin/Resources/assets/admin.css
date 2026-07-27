@@ -1,0 +1,569 @@
+/*
+ * Operator panel stylesheet — the only one.
+ *
+ * No build step, no CDN: the environment has neither outbound access for a
+ * font or icon set nor a bundler in this module's path. Everything is plain
+ * CSS, served by AssetController from inside the module.
+ *
+ * Written RTL-first. `direction: rtl` on the root plus logical properties
+ * (margin-inline, padding-inline, border-inline) rather than left/right, so the
+ * layout does not have to be re-thought if an LTR locale is ever added.
+ */
+
+:root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --border: #dfe3e8;
+    --text: #1c2430;
+    --muted: #67717f;
+
+    --brand: #8a6d1f;
+    --brand-soft: #fbf5e4;
+
+    --ok: #1c7a4a;
+    --ok-soft: #e7f5ee;
+    --warn: #9a6400;
+    --warn-soft: #fdf2df;
+    --bad: #a32222;
+    --bad-soft: #fbeaea;
+    --info: #1f5c9a;
+    --info-soft: #e8f1fa;
+
+    --radius: 6px;
+    --gap: 16px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    direction: rtl;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Tahoma, "Iranian Sans", "DejaVu Sans", sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+a {
+    color: var(--info);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* ── shell ─────────────────────────────────────────────────────────────── */
+
+.shell {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 232px;
+    flex: 0 0 232px;
+    background: #16202c;
+    color: #cfd8e3;
+    padding: 20px 0;
+}
+
+.sidebar .brand {
+    padding: 0 20px 16px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #f0d489;
+    border-block-end: 1px solid #23303f;
+    margin-block-end: 12px;
+}
+
+.sidebar nav a {
+    display: block;
+    padding: 8px 20px;
+    color: #cfd8e3;
+}
+
+.sidebar nav a:hover {
+    background: #1e2b3a;
+    text-decoration: none;
+}
+
+.sidebar nav a.active {
+    background: #22303f;
+    color: #f0d489;
+    border-inline-start: 3px solid #f0d489;
+}
+
+.sidebar .group-label {
+    padding: 14px 20px 4px;
+    font-size: 11px;
+    color: #6f7d8c;
+    letter-spacing: .04em;
+}
+
+.main {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 20px 24px 48px;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gap);
+    margin-block-end: 20px;
+}
+
+.topbar h1 {
+    font-size: 20px;
+    margin: 0;
+}
+
+.topbar .who {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* ── cards, panels ─────────────────────────────────────────────────────── */
+
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-block-end: var(--gap);
+}
+
+.panel > h2 {
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 14px;
+    border-block-end: 1px solid var(--border);
+    background: #fafbfc;
+    border-start-start-radius: var(--radius);
+    border-start-end-radius: var(--radius);
+}
+
+.panel > .body {
+    padding: 16px;
+}
+
+.grid {
+    display: grid;
+    gap: var(--gap);
+}
+
+.grid.cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.grid.cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1000px) {
+    .grid.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.cols-2 { grid-template-columns: 1fr; }
+}
+
+.stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+}
+
+.stat .label {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.stat .value {
+    font-size: 22px;
+    font-weight: bold;
+    margin-block: 4px;
+}
+
+.stat .delta {
+    font-size: 12px;
+}
+
+.stat .delta.up { color: var(--ok); }
+.stat .delta.down { color: var(--bad); }
+.stat .delta.flat { color: var(--muted); }
+
+/* ── the alert that outranks everything else ───────────────────────────── */
+
+.alerts {
+    margin-block-end: var(--gap);
+}
+
+.alert {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--gap);
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    margin-block-end: 8px;
+}
+
+.alert .title {
+    font-weight: bold;
+}
+
+.alert .count {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+/*
+ * A ledger discrepancy means the platform's books do not add up. It is given
+ * the heaviest treatment on the page on purpose — full-width, thick border,
+ * largest type — because anything subtler gets scrolled past.
+ */
+.alert.critical {
+    border: 2px solid var(--bad);
+    background: var(--bad-soft);
+    color: #6f1717;
+    padding: 18px 20px;
+}
+
+.alert.critical .count {
+    font-size: 30px;
+}
+
+.alert.warn {
+    border-color: var(--warn);
+    background: var(--warn-soft);
+    color: #6b4600;
+}
+
+.alert.ok {
+    border-color: var(--ok);
+    background: var(--ok-soft);
+    color: #145634;
+}
+
+/* ── tables ────────────────────────────────────────────────────────────── */
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+table.data {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+table.data th,
+table.data td {
+    padding: 8px 10px;
+    border-block-end: 1px solid var(--border);
+    text-align: start;
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+table.data th {
+    background: #fafbfc;
+    color: var(--muted);
+    font-weight: normal;
+    font-size: 12px;
+}
+
+table.data tr:hover td {
+    background: #fcfcfd;
+}
+
+table.data td.wrap {
+    white-space: normal;
+    min-width: 220px;
+}
+
+/* Numbers line up only if they are tabular and end-aligned. */
+table.data td.num,
+table.data th.num {
+    text-align: end;
+    font-variant-numeric: tabular-nums;
+    font-family: "DejaVu Sans Mono", monospace;
+}
+
+table.data td.neg {
+    color: var(--bad);
+}
+
+.empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+}
+
+/* ── badges ────────────────────────────────────────────────────────────── */
+
+.badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.badge.ok { background: var(--ok-soft); color: var(--ok); border-color: #b9e0cc; }
+.badge.warn { background: var(--warn-soft); color: var(--warn); border-color: #ecd6a5; }
+.badge.bad { background: var(--bad-soft); color: var(--bad); border-color: #eec2c2; }
+.badge.info { background: var(--info-soft); color: var(--info); border-color: #bcd4ec; }
+.badge.muted { background: #f0f2f4; color: var(--muted); border-color: var(--border); }
+
+/* ── forms ─────────────────────────────────────────────────────────────── */
+
+label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-block-end: 4px;
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="date"],
+input[type="file"],
+select,
+textarea {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #fff;
+    font: inherit;
+    color: inherit;
+}
+
+textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+.field {
+    margin-block-end: 14px;
+}
+
+.hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-block-start: 4px;
+}
+
+.hint.danger {
+    color: var(--bad);
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 10px;
+    margin-block-end: var(--gap);
+}
+
+.filters .field {
+    margin-block-end: 0;
+    min-width: 150px;
+}
+
+button,
+.btn {
+    display: inline-block;
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+
+button:hover,
+.btn:hover {
+    background: #f6f7f9;
+    text-decoration: none;
+}
+
+button.primary,
+.btn.primary {
+    background: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+}
+
+button.danger,
+.btn.danger {
+    background: var(--bad);
+    border-color: var(--bad);
+    color: #fff;
+}
+
+.tabs {
+    display: flex;
+    gap: 4px;
+    margin-block-end: var(--gap);
+    flex-wrap: wrap;
+}
+
+.tabs a {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #fff;
+    color: var(--text);
+}
+
+.tabs a.active {
+    background: var(--brand-soft);
+    border-color: var(--brand);
+    color: #6b5316;
+}
+
+/* ── flash + validation ────────────────────────────────────────────────── */
+
+.flash {
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    margin-block-end: var(--gap);
+    border: 1px solid var(--ok);
+    background: var(--ok-soft);
+    color: #145634;
+}
+
+.errors {
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    margin-block-end: var(--gap);
+    border: 1px solid var(--bad);
+    background: var(--bad-soft);
+    color: #6f1717;
+}
+
+.errors ul {
+    margin: 0;
+    padding-inline-start: 18px;
+}
+
+/* ── confirm dialog ────────────────────────────────────────────────────── */
+
+/*
+ * A <details> element, not a JS modal: there is no bundler here, and a
+ * disclosure that must be opened before the submit button exists is a real
+ * speed bump on an irreversible action, which is the whole point.
+ */
+details.confirm {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    background: #fff;
+}
+
+details.confirm[open] {
+    border-color: var(--bad);
+    background: var(--bad-soft);
+}
+
+details.confirm > summary {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+details.confirm .warning {
+    color: #6f1717;
+    margin-block: 8px;
+}
+
+/* ── timeline ──────────────────────────────────────────────────────────── */
+
+ol.timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-inline-start: 2px solid var(--border);
+    padding-inline-start: 16px;
+}
+
+ol.timeline li {
+    position: relative;
+    padding-block-end: 14px;
+}
+
+ol.timeline li::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: -22px;
+    top: 8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--brand);
+}
+
+ol.timeline .when {
+    color: var(--muted);
+    font-size: 11px;
+}
+
+/* ── key/value ─────────────────────────────────────────────────────────── */
+
+dl.kv {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 4px 16px;
+    margin: 0;
+}
+
+dl.kv dt {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+dl.kv dd {
+    margin: 0;
+}
+
+.mono {
+    font-family: "DejaVu Sans Mono", monospace;
+    font-size: 12px;
+    word-break: break-all;
+}
+
+/* ── login ─────────────────────────────────────────────────────────────── */
+
+.login-shell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 360px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+}
+
+.login-card h1 {
+    font-size: 18px;
+    margin-block: 0 16px;
+}

@@ -1,0 +1,1246 @@
+/*
+ * Trader panel stylesheet — doc §1.3's dense terminal layout.
+ *
+ * Hand-written rather than utility classes: a three-column terminal with a
+ * depth ladder needs exact control over row height and column alignment, and a
+ * financial table needs `font-variant-numeric: tabular-nums` applied by rule
+ * rather than remembered at every call site.
+ *
+ * THE TWO RULES THAT MATTER
+ * -------------------------
+ * 1. `.num` sets `direction: ltr` AND `tabular-nums`. The page is RTL; a number
+ *    without an explicit direction is reordered by the bidi algorithm and
+ *    "1,247.320" renders as "320.1,247". Proportional digits make columns of
+ *    figures ragged even when the values are the same width. Both are visible
+ *    defects on a trading screen, and both are fixed here once.
+ * 2. `.is-stale` greys a live figure. Applied by the component whose data has
+ *    aged past 30 s, alongside the StaleBadge that names the age.
+ */
+
+:root {
+    --bg: #10131a;
+    --bg-panel: #171b24;
+    --bg-raised: #1e2330;
+    --bg-hover: #262c3b;
+    --border: #2b3242;
+    --text: #e6e9ef;
+    --text-muted: #8b93a7;
+    --accent: #d4a437;
+    --buy: #2ea36a;
+    --sell: #d9534f;
+    --warn: #d99a2b;
+    --info: #4a8fd4;
+    --radius: 4px;
+    --row: 22px;
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --bg: #f4f5f7;
+        --bg-panel: #ffffff;
+        --bg-raised: #fafbfc;
+        --bg-hover: #eef0f4;
+        --border: #d8dce4;
+        --text: #1b1f27;
+        --text-muted: #5f6779;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Vazirmatn', 'IRANSans', Tahoma, system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* ── The bidi and alignment rule ─────────────────────────────────────────── */
+
+.num {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+    white-space: nowrap;
+}
+
+.num--negative {
+    color: var(--sell);
+}
+
+.muted {
+    color: var(--text-muted);
+}
+
+.is-stale {
+    opacity: 0.55;
+    filter: grayscale(0.7);
+    transition: opacity 0.2s ease;
+}
+
+/* ── Shell ───────────────────────────────────────────────────────────────── */
+
+.app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.app__bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+    height: 40px;
+    background: var(--bg-panel);
+    border-bottom: 1px solid var(--border);
+    flex: 0 0 auto;
+}
+
+.app__brand {
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.3px;
+}
+
+.app__org {
+    font-weight: 600;
+}
+
+.app__spacer {
+    flex: 1;
+}
+
+.app__clock {
+    color: var(--text-muted);
+}
+
+.app__transport {
+    font-size: 11px;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1px 6px;
+}
+
+.app__nav {
+    display: flex;
+    gap: 2px;
+}
+
+.app__nav-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: var(--radius);
+}
+
+.app__nav-link:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+}
+
+.app__nav-link.is-active {
+    background: var(--bg-raised);
+    color: var(--accent);
+}
+
+.app__main {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.market-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.market-state__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+}
+
+.market-state--open .market-state__dot {
+    background: var(--buy);
+}
+
+.market-state--warn .market-state__dot {
+    background: var(--warn);
+}
+
+.market-state--closed .market-state__dot {
+    background: var(--sell);
+}
+
+/* ── Terminal grid ───────────────────────────────────────────────────────── */
+
+.terminal {
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr) 280px;
+    gap: 1px;
+    background: var(--border);
+    height: 100%;
+    min-height: 0;
+}
+
+.terminal__rail,
+.terminal__centre,
+.terminal__ticket {
+    background: var(--bg);
+    overflow-y: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+@media (max-width: 1100px) {
+    .terminal {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+}
+
+.rail-section {
+    background: var(--bg-panel);
+    padding: 8px 10px;
+}
+
+.rail-section__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rail-section__title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
+    margin: 0 0 6px;
+}
+
+.rail-section--alert {
+    border-inline-start: 3px solid var(--warn);
+}
+
+.rail-alert {
+    color: var(--warn);
+    text-decoration: none;
+}
+
+.instruments {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.instrument {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    background: none;
+    border: 0;
+    color: var(--text);
+    font: inherit;
+    padding: 3px 4px;
+    cursor: pointer;
+    border-radius: var(--radius);
+    text-align: start;
+}
+
+.instrument:hover {
+    background: var(--bg-hover);
+}
+
+.instrument.is-selected {
+    background: var(--bg-raised);
+    color: var(--accent);
+}
+
+.instrument.is-halted {
+    color: var(--text-muted);
+    text-decoration: line-through;
+}
+
+.instrument__marker {
+    width: 8px;
+}
+
+.instrument__code {
+    flex: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.instrument__key,
+kbd {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 10px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 0 3px;
+    color: var(--text-muted);
+    background: var(--bg-raised);
+}
+
+.balance {
+    margin-bottom: 10px;
+}
+
+.balance__label {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.balance__total {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.balance__breakdown {
+    margin: 4px 0 0;
+    padding: 0;
+}
+
+.balance__breakdown > div {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.balance__breakdown dt,
+.balance__breakdown dd {
+    margin: 0;
+}
+
+/* ── Ticker and chart ────────────────────────────────────────────────────── */
+
+.ticker {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--bg-panel);
+}
+
+.ticker__code {
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.ticker__price {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.ticker__change.is-up {
+    color: var(--buy);
+}
+
+.ticker__change.is-down {
+    color: var(--sell);
+}
+
+.ticker__spacer {
+    flex: 1;
+}
+
+.ticker__stats {
+    display: flex;
+    gap: 14px;
+    margin: 0;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.ticker__stats > div {
+    display: flex;
+    gap: 4px;
+}
+
+.ticker__stats dt,
+.ticker__stats dd {
+    margin: 0;
+}
+
+.chart {
+    margin: 0;
+    padding: 8px 12px;
+    background: var(--bg-panel);
+}
+
+.chart__caption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.chart__ranges {
+    display: flex;
+    gap: 2px;
+}
+
+.chart__range {
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 11px;
+    padding: 0 5px;
+}
+
+.chart__range.is-active {
+    border-color: var(--border);
+    color: var(--accent);
+}
+
+.chart__svg {
+    width: 100%;
+    height: 140px;
+    display: block;
+}
+
+.chart__line {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
+}
+
+.chart__area {
+    fill: color-mix(in srgb, var(--accent) 12%, transparent);
+    stroke: none;
+}
+
+.chart__axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.chart__empty {
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Depth ladder ────────────────────────────────────────────────────────── */
+
+.book {
+    background: var(--bg-panel);
+    padding: 6px 0;
+}
+
+.book__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px 4px;
+}
+
+.book__header h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.book__label {
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 0 12px;
+}
+
+.book__row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 110px 90px 1fr 28px;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: var(--row);
+    padding: 0 12px;
+    background: none;
+    border: 0;
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+    text-align: start;
+}
+
+.book__row:hover {
+    background: var(--bg-hover);
+}
+
+.book__row--ask .book__price {
+    color: var(--sell);
+}
+
+.book__row--bid .book__price {
+    color: var(--buy);
+}
+
+.book__qty,
+.book__count {
+    color: var(--text-muted);
+}
+
+.book__bar {
+    height: 8px;
+    border-radius: 2px;
+    display: block;
+}
+
+.book__row--ask .book__bar {
+    background: color-mix(in srgb, var(--sell) 35%, transparent);
+}
+
+.book__row--bid .book__bar {
+    background: color-mix(in srgb, var(--buy) 35%, transparent);
+}
+
+.book__spread {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: var(--row);
+    font-size: 11px;
+    border-block: 1px dashed var(--border);
+    margin: 4px 12px;
+}
+
+.book__empty {
+    padding: 8px 12px;
+    color: var(--text-muted);
+}
+
+/* ── Open orders and tape ────────────────────────────────────────────────── */
+
+.open-orders,
+.tape,
+.order-form {
+    background: var(--bg-panel);
+    padding: 8px 12px;
+}
+
+.open-orders__header,
+.tape__header,
+.order-form__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.open-orders__header h2,
+.tape__header h2,
+.order-form__header h2 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.tape__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tape__row {
+    display: grid;
+    grid-template-columns: 44px 1fr 70px 14px;
+    gap: 6px;
+    height: 20px;
+    align-items: center;
+}
+
+.tape__time {
+    color: var(--text-muted);
+}
+
+.tape__dir.is-up {
+    color: var(--buy);
+}
+
+.tape__dir.is-down {
+    color: var(--sell);
+}
+
+.is-buy {
+    color: var(--buy);
+}
+
+.is-sell {
+    color: var(--sell);
+}
+
+/* ── Order form ──────────────────────────────────────────────────────────── */
+
+.side-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.side-toggle__btn {
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-raised);
+    color: var(--text-muted);
+    font: inherit;
+    cursor: pointer;
+}
+
+.side-toggle__btn--buy.is-active {
+    background: var(--buy);
+    border-color: var(--buy);
+    color: #fff;
+}
+
+.side-toggle__btn--sell.is-active {
+    background: var(--sell);
+    border-color: var(--sell);
+    color: #fff;
+}
+
+.field {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.field--inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin: 0;
+}
+
+.field__label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+
+.field__hint {
+    display: block;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.field__error,
+.order-form__error,
+.login__error {
+    display: block;
+    font-size: 11px;
+    color: var(--sell);
+    margin-top: 2px;
+}
+
+.input {
+    width: 100%;
+    padding: 5px 7px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font: inherit;
+}
+
+.input:focus {
+    outline: 1px solid var(--accent);
+    border-color: var(--accent);
+}
+
+.input--sm {
+    width: auto;
+    padding: 2px 6px;
+}
+
+.input--search {
+    max-width: 220px;
+}
+
+.order-form__summary {
+    border-top: 1px solid var(--border);
+    margin: 8px 0;
+    padding-top: 8px;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-muted);
+    padding: 1px 0;
+}
+
+.summary-row--total {
+    color: var(--text);
+    font-weight: 700;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+    padding-top: 4px;
+}
+
+.order-form__hint {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin: 6px 0 0;
+    text-align: center;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+.btn {
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-raised);
+    color: var(--text);
+    font: inherit;
+    cursor: pointer;
+}
+
+.btn:hover:not(:disabled) {
+    background: var(--bg-hover);
+}
+
+.btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.btn--primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #16130a;
+    font-weight: 700;
+}
+
+.btn--buy {
+    background: var(--buy);
+    border-color: var(--buy);
+    color: #fff;
+}
+
+.btn--sell {
+    background: var(--sell);
+    border-color: var(--sell);
+    color: #fff;
+}
+
+.btn--ghost {
+    background: none;
+}
+
+.btn--block {
+    width: 100%;
+}
+
+.btn--sm {
+    padding: 2px 6px;
+    font-size: 11px;
+}
+
+.btn--icon {
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: var(--text-muted);
+}
+
+.btn--icon:hover {
+    color: var(--sell);
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+
+.page {
+    padding: 12px 16px;
+}
+
+.page__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.page__header h1 {
+    font-size: 16px;
+    margin: 0;
+}
+
+.page__note,
+.page__missing {
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.data-table {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.data-table__toolbar,
+.data-table__footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.data-table__footer {
+    border-bottom: 0;
+    border-top: 1px solid var(--border);
+}
+
+.data-table__title {
+    font-weight: 700;
+}
+
+.data-table__spacer {
+    flex: 1;
+}
+
+.data-table__filters {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+/* Wide tables scroll inside their own box; the page never scrolls sideways. */
+.data-table__scroll {
+    overflow-x: auto;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.table th,
+.table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+    text-align: start;
+    white-space: nowrap;
+}
+
+.table th {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    user-select: none;
+}
+
+.table th.is-sortable {
+    cursor: pointer;
+}
+
+.table th.is-sortable:hover {
+    color: var(--text);
+}
+
+.table tbody tr:hover {
+    background: var(--bg-hover);
+}
+
+.table--dense th,
+.table--dense td {
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+.table--plain td {
+    border: 0;
+}
+
+.table tfoot td {
+    font-weight: 700;
+    border-top: 2px solid var(--border);
+    background: var(--bg-raised);
+}
+
+.table__empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 18px;
+}
+
+.table__total-label {
+    color: var(--text-muted);
+}
+
+.align-end {
+    text-align: end;
+}
+
+.align-start {
+    text-align: start;
+}
+
+.align-center {
+    text-align: center;
+}
+
+.sort-icon {
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-inline-start: 2px;
+}
+
+.row--danger {
+    background: color-mix(in srgb, var(--sell) 12%, transparent);
+}
+
+.row--attention {
+    background: color-mix(in srgb, var(--warn) 10%, transparent);
+}
+
+.row-actions {
+    display: flex;
+    gap: 4px;
+}
+
+/* ── Badges ──────────────────────────────────────────────────────────────── */
+
+.badge {
+    display: inline-block;
+    padding: 0 6px;
+    border-radius: 9px;
+    font-size: 11px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+}
+
+.badge--good {
+    color: var(--buy);
+    border-color: var(--buy);
+}
+
+.badge--danger {
+    color: var(--sell);
+    border-color: var(--sell);
+}
+
+.badge--warn {
+    color: var(--warn);
+    border-color: var(--warn);
+}
+
+.badge--info {
+    color: var(--info);
+    border-color: var(--info);
+}
+
+.stale {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: var(--buy);
+}
+
+.stale__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.stale--is-stale {
+    color: var(--warn);
+}
+
+/* ── Ledger ──────────────────────────────────────────────────────────────── */
+
+.ledger__link {
+    text-decoration: none;
+    margin-inline-start: 4px;
+}
+
+.ledger__closing {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.ledger__closing dl {
+    margin: 0;
+}
+
+.ledger__closing > dl > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 1px 0;
+}
+
+.ledger__closing dt,
+.ledger__closing dd {
+    margin: 0;
+}
+
+.reconciliation {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+}
+
+.reconciliation--ok,
+.reconciliation--partial {
+    border-color: var(--buy);
+    color: var(--buy);
+}
+
+.reconciliation--break {
+    border-color: var(--sell);
+    color: var(--sell);
+    background: color-mix(in srgb, var(--sell) 10%, transparent);
+}
+
+/* ── Misc ────────────────────────────────────────────────────────────────── */
+
+.segmented {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.segmented__btn,
+.report-tabs__btn {
+    background: var(--bg-raised);
+    border: 0;
+    color: var(--text-muted);
+    cursor: pointer;
+    font: inherit;
+    padding: 3px 10px;
+}
+
+.segmented__btn.is-active,
+.report-tabs__btn.is-active {
+    background: var(--accent);
+    color: #16130a;
+}
+
+.report-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.report-tabs__btn {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.panel-card {
+    margin-top: 12px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+}
+
+.panel-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.kv > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+}
+
+.kv dt,
+.kv dd {
+    margin: 0;
+}
+
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+
+.modal {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    min-width: 320px;
+    max-width: 520px;
+}
+
+.modal--wide {
+    min-width: 420px;
+}
+
+.modal__title {
+    margin: 0 0 10px;
+    font-size: 14px;
+}
+
+.modal__actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+}
+
+.modal__hint {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin: 6px 0 0;
+}
+
+.confirm-list > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    border-bottom: 1px dotted var(--border);
+}
+
+.confirm-list dt,
+.confirm-list dd {
+    margin: 0;
+}
+
+.shortcut__keys {
+    width: 120px;
+}
+
+.toasts {
+    position: fixed;
+    inset-block-end: 12px;
+    inset-inline-start: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 60;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 10px;
+    max-width: 360px;
+}
+
+.toast--success {
+    border-color: var(--buy);
+}
+
+.toast--error {
+    border-color: var(--sell);
+}
+
+.toast--warn {
+    border-color: var(--warn);
+}
+
+.toast__close {
+    background: none;
+    border: 0;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+}
+
+/* ── Login ───────────────────────────────────────────────────────────────── */
+
+.login {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+.login__card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 24px;
+    width: 320px;
+}
+
+.login__brand {
+    margin: 0;
+    font-size: 20px;
+    color: var(--accent);
+    text-align: center;
+}
+
+.login__subtitle {
+    margin: 2px 0 18px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.login__hint {
+    font-size: 12px;
+    color: var(--text-muted);
+}

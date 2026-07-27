@@ -172,17 +172,19 @@ final class CsvExporterTest extends TestCase
     }
 
     #[Test]
-    public function the_excel_variant_starts_with_a_byte_order_mark(): void
+    public function the_excel_variant_is_a_real_workbook_and_not_a_csv(): void
     {
+        // The EXCEL format used to be this CSV with a byte-order mark bolted
+        // on. It is now a genuine .xlsx package, which is why it starts with
+        // the ZIP magic number and not with a BOM. Everything the workbook does
+        // with the data is asserted in XlsxExporterTest; what matters here is
+        // that the two exports have parted company.
         $excel = new ExcelExporter($this->csv);
 
-        $output = $excel->export('گزارش', ['شرح'], [['فروش طلا', 500]]);
+        $output = $excel->export('گزارش', ['شرح', 'مبلغ'], [['فروش طلا', 500]]);
 
-        // Without it Excel mangles Persian text.
-        self::assertStringStartsWith("\xEF\xBB\xBF", $output);
-
-        // And the numbers are still numbers underneath.
-        self::assertStringContainsString(',500', $output);
+        self::assertStringStartsWith('PK', $output);
+        self::assertStringNotContainsString("\xEF\xBB\xBF", $output);
     }
 
     #[Test]

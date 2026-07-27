@@ -223,7 +223,7 @@ final class ReportJobServiceTest extends ReportingTestCase
             self::ORG,
             ReportType::TRADES,
             DateRange::of('2026-01-20', '2026-01-20'),
-            ReportFormat::EXCEL,
+            ReportFormat::CSV,
         );
 
         $content = (string) $this->jobs->download((string) $job->download_token);
@@ -238,6 +238,40 @@ final class ReportJobServiceTest extends ReportingTestCase
 
         // Weight in grams to three decimals.
         self::assertStringContainsString('248.750', $content);
+    }
+
+    #[Test]
+    public function an_excel_export_is_a_workbook_stored_with_an_xlsx_extension(): void
+    {
+        $this->data->trades = [
+            new TradeRow(
+                tradeId: 88231,
+                executedOn: '2026-01-20',
+                side: 'BUY',
+                venue: 'ORDER_BOOK',
+                fineMg: 248_750,
+                purityX10k: 9_950,
+                pricePerFineGram: 78_480_000,
+                grossRial: 19_521_900_000,
+                feeRial: 29_282_850,
+            ),
+        ];
+
+        $job = $this->jobs->request(
+            self::ORG,
+            ReportType::TRADES,
+            DateRange::of('2026-01-20', '2026-01-20'),
+            ReportFormat::EXCEL,
+        );
+
+        $content = (string) $this->jobs->download((string) $job->download_token);
+
+        self::assertStringStartsWith('PK', $content, 'An .xlsx is a ZIP package');
+        self::assertStringEndsWith('.xlsx', (string) $job->refresh()->file_path);
+
+        // The checksum on the job row still covers the DATA, so the same period
+        // exported as CSV and as a workbook is verifiably the same report.
+        self::assertSame(64, strlen((string) $job->checksum));
     }
 
     #[Test]

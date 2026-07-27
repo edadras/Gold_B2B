@@ -6,15 +6,18 @@ namespace App\Modules\Trading\Application;
 
 use App\Modules\Shared\Exceptions\InvalidStateTransitionException;
 use App\Modules\Shared\Support\SettingsRepository;
+use App\Modules\Trading\Application\Results\AuctionResult;
 use App\Modules\Trading\Domain\Exceptions\MarketClosedException;
 use App\Modules\Trading\Domain\Exceptions\TradingEntityNotFoundException;
 use App\Modules\Trading\Domain\MarketSessionStatus;
 use App\Modules\Trading\Events\MarketPaused;
 use App\Modules\Trading\Events\MarketSessionClosed;
 use App\Modules\Trading\Events\MarketSessionOpened;
+use App\Modules\Trading\Events\OpeningAuctionCompleted;
 use App\Modules\Trading\Infrastructure\Models\Instrument;
 use App\Modules\Trading\Infrastructure\Models\MarketSession;
 use Carbon\CarbonImmutable;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -34,7 +37,24 @@ final class MarketSessionService
     public function __construct(
         private readonly SettingsRepository $settings,
         private readonly OrderExpiryService $expiry,
+        private readonly Container $container,
     ) {}
+
+    /**
+     * Resolved on demand, not injected.
+     *
+     * OpeningAuction → MatchingEngine → MarketSessionService (for the OHLCV
+     * fold) is a cycle the container cannot construct. Asking for the auction
+     * only when a session actually opens breaks it without inverting a
+     * dependency that is correct in every other respect.
+     */
+    private function auction(): OpeningAuction
+    {
+        /** @var OpeningAuction $auction */
+        $auction = $this->container->make(OpeningAuction::class);
+
+        return $auction;
+    }
 
     /**
      * @throws MarketClosedException when orders may not be entered right now
@@ -116,8 +136,19 @@ final class MarketSessionService
     }
 
     /**
-     * PRE_OPEN|PAUSED -> OPEN. Continuous trading begins (or resumes, in which
-     * case §4.8 calls for a re-opening auction — see the note below).
+     * PRE_OPEN|PAUSED -> OPEN. The batch auction runs, then continuous trading
+     * begins (§4.8).
+     *
+     * Both routes into OPEN go through the auction, because both leave behind a
+     * book that was accumulated without matching: PRE_OPEN by design, PAUSED
+     * because a circuit breaker stopped execution but not order entry. §4.8
+     * says so explicitly for the second case — «بازگشایی پس از توقف ► حراج
+     * بازگشایی».
+     *
+     * The status is committed before the auction runs, so the auction sees an
+     * OPEN market and its trades are ordinary open-market trades. Every event
+     * — the session's and the auction's — is fired after both transactions
+     * have committed (AGENT_BRIEF rule 3).
      */
     public function open(Instrument $instrument, ?CarbonImmutable $day = null): MarketSession
     {
@@ -135,20 +166,51 @@ final class MarketSessionService
             'pause_reason' => null,
         ]);
 
-        // The opening auction of §4.8 batches the pre-open book at a single
-        // clearing price. Continuous matching is what this module implements;
-        // the auction is deferred and tracked as unfinished work rather than
-        // faked with a continuous sweep that would print several prices.
+        $auction = $this->auction()->run($instrument);
+
         event(new MarketSessionOpened(
             sessionId: $session->id,
             instrumentId: $session->instrument_id,
             sessionDate: $session->session_date->toDateString(),
-            openingPriceRial: $session->opening_price_rial,
+            openingPriceRial: $session->refresh()->opening_price_rial,
             resumedFromPause: $resumed,
             occurredAt: now()->toIso8601String(),
         ));
 
+        $this->announceAuction($session, $auction, $resumed);
+
         return $session;
+    }
+
+    /**
+     * The auction's own events, after commit and after the session's.
+     *
+     * A listener that hears OpeningAuctionCompleted may go and read the trades,
+     * so the individual TradeExecuted events go out first and the summary
+     * closes the sequence. Nothing is announced when nothing crossed: an
+     * instrument whose book was empty or one-sided has no clearing price, and
+     * publishing one would invent a market that did not open.
+     */
+    private function announceAuction(MarketSession $session, AuctionResult $auction, bool $resumed): void
+    {
+        if (! $auction->executed() || $auction->clearingPriceRial === null) {
+            return;
+        }
+
+        foreach ($auction->trades as $trade) {
+            event(TradeEventFactory::executed($trade));
+        }
+
+        event(new OpeningAuctionCompleted(
+            instrumentId: $session->instrument_id,
+            sessionId: $session->id,
+            clearingPriceRial: $auction->clearingPriceRial,
+            matchedVolumeMg: $auction->matchedVolumeMg,
+            orderCount: $auction->orderCount,
+            tradeCount: $auction->tradeCount(),
+            resumedFromPause: $resumed,
+            occurredAt: now()->toIso8601String(),
+        ));
     }
 
     /**

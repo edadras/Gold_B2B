@@ -87,6 +87,32 @@ abstract class TradingTestCase extends BaseTestCase
         return $instrument;
     }
 
+    /**
+     * The same fixtures, but the session stops at PRE_OPEN.
+     *
+     * Orders may be entered and none of them match, which is the state the
+     * opening auction is designed to resolve: call sessions()->open() when the
+     * book is built.
+     */
+    protected function setUpPreOpenMarket(int ...$organizationIds): Instrument
+    {
+        $this->app->make(LedgerSystemAccountsSeeder::class)->run();
+
+        $provisioner = $this->app->make(AccountProvisioner::class);
+
+        foreach ($organizationIds as $id) {
+            $provisioner->provisionMember($id);
+        }
+
+        $this->app->make(InstrumentsSeeder::class)->run();
+
+        $instrument = $this->instrument();
+
+        $this->sessions()->preOpen($instrument);
+
+        return $instrument;
+    }
+
     protected function instrument(string $code = self::INSTRUMENT): Instrument
     {
         return Instrument::query()->where('code', $code)->firstOrFail();

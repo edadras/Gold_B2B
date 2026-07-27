@@ -138,6 +138,62 @@ final class MatchingEngine
     }
 
     /**
+     * Execute one crossing pair at a price the caller has already decided.
+     *
+     * Public so OpeningAuction can reuse this whole path — fee terms, the
+     * third self-trade net, the trade and fill rows, both reservations, the
+     * session's OHLCV — instead of writing a second, subtly different one.
+     * Continuous matching derives the price from the maker; the auction
+     * derives it from the clearing calculation. After that the two are the
+     * same operation, and there is exactly one implementation of it.
+     *
+     * The caller owns the transaction and must reconcile the taker's fill
+     * status itself; only the maker's is reconciled here, as in match().
+     */
+    public function executeCross(
+        Order $taker,
+        Order $maker,
+        FineWeight $quantity,
+        PricePerFineGram $price,
+        Instrument $instrument,
+    ): Trade {
+        return $this->execute($taker, $maker, $quantity, $price, $instrument);
+    }
+
+    /**
+     * True when either organisation has blocked the other.
+     *
+     * The sweep expresses the same rule as a SQL filter because it is matching
+     * one order against a set; an auction holds both books in memory and asks
+     * the question pair by pair. Both answers come from this class so the rule
+     * has one home, and both tolerate the Counterparty module being absent
+     * from a deployment slice.
+     */
+    public function isBlockedPair(int $organizationId, int $counterpartyOrgId): bool
+    {
+        $this->counterpartyTableExists ??= Schema::hasTable('counterparty_relations');
+
+        if ($this->counterpartyTableExists !== true) {
+            return false;
+        }
+
+        return DB::table('counterparty_relations')
+            ->where('is_blocked', true)
+            ->where(static function ($query) use ($organizationId, $counterpartyOrgId): void {
+                $query
+                    ->where(static function ($side) use ($organizationId, $counterpartyOrgId): void {
+                        $side->where('organization_id', $organizationId)
+                            ->where('counterparty_org_id', $counterpartyOrgId);
+                    })
+                    ->orWhere(static function ($side) use ($organizationId, $counterpartyOrgId): void {
+                        $side->where('organization_id', $counterpartyOrgId)
+                            ->where('counterparty_org_id', $organizationId);
+                    });
+            })
+            ->exists();
+    }
+
+    /**
      * Candidate makers, in price-time priority, locked FOR UPDATE.
      *
      * Locking happens in a second pass ordered by id, because AGENT_BRIEF rule

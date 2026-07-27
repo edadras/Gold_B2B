@@ -44,6 +44,18 @@ final class ArchitectureTest extends TestCase
         'Reputation' => ['Shared', 'Identity'],
         'Notification' => ['Shared', 'Identity'],
         'Reporting' => ['Shared', 'Identity'],
+        'Webhook' => ['Shared', 'Identity'],
+        // The realtime layer, at the bottom of the graph with Notification and
+        // Webhook. It consumes Trading, Ledger, Settlement and Pricing events,
+        // but only ever by string class name through
+        // Broadcasting\Domain\EventShape — so it imports none of them, and
+        // adding or removing it touches no other module's code.
+        'Broadcasting' => ['Shared', 'Identity'],
+        // The trader web panel. Identity only: it needs the viewer's identity
+        // and tenancy to render the shell, and reads every other module's data
+        // over HTTP from the browser rather than in PHP — which is why a screen
+        // full of Trading, Ledger and Settlement figures adds no edge here.
+        'Web' => ['Shared', 'Identity'],
     ];
 
     /** Namespaces where floating-point arithmetic is forbidden outright. */
@@ -283,7 +295,12 @@ final class ArchitectureTest extends TestCase
 
         /** @var SplFileInfo $file */
         foreach ($iterator as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
+            // Blade templates end in .blade.php and so match an extension
+            // check for 'php', but they are views, not classes: they carry no
+            // namespace, no imports and no strict_types declaration.
+            if ($file->isFile()
+                && $file->getExtension() === 'php'
+                && ! str_ends_with($file->getFilename(), '.blade.php')) {
                 $files[] = clone $file;
             }
         }
