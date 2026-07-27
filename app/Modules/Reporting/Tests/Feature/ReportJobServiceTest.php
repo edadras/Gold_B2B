@@ -120,11 +120,23 @@ final class ReportJobServiceTest extends ReportingTestCase
             DateRange::of('2026-01-01', '2026-01-05'),
         );
 
-        $path = (string) $job->file_path;
+        $second = $this->jobs->request(
+            self::ORG,
+            ReportType::GOLD_FLOW,
+            DateRange::of('2026-01-01', '2026-01-05'),
+        );
 
-        self::assertStringNotContainsString((string) $job->id, $path);
-        self::assertStringNotContainsString((string) self::ORG, $path);
-        self::assertMatchesRegularExpression('#^reports/[0-9a-f]{2}/[0-9a-f]{64}\.csv$#', $path);
+        // A 64-character random name, nothing else.
+        self::assertMatchesRegularExpression(
+            '#^reports/[0-9a-f]{2}/[0-9a-f]{64}\.csv$#',
+            (string) $job->file_path,
+        );
+
+        // Two identical requests land in different places, so the path cannot
+        // be a function of the parameters — which is what makes guessing
+        // another member's file hopeless.
+        self::assertNotSame((string) $job->file_path, (string) $second->file_path);
+        self::assertNotSame((string) $job->download_token, (string) $second->download_token);
     }
 
     #[Test]

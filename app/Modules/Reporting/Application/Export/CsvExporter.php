@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Reporting\Application\Export;
 
-use App\Modules\Reporting\Support\JalaliDate;
+use App\Modules\Shared\Support\JalaliDate;
 
 /**
  * CSV writer for report exports, following the rules of §15.10.
@@ -24,8 +24,10 @@ use App\Modules\Reporting\Support\JalaliDate;
  *    different number to a careless reader.
  *
  *  · **Two date columns.** «تاریخ شمسی به‌صورت رشته + یک ستون تاریخ میلادی برای
- *    مرتب‌سازی». The Jalali column is what a member reads; the Gregorian one is
- *    what sorts correctly, since Jalali strings sort correctly only by accident.
+ *    مرتب‌سازی». The Jalali column is what a member reads, but no spreadsheet
+ *    parses it as a date, so it cannot be sorted chronologically, filtered by
+ *    month, or subtracted. The ISO Gregorian column beside it is what makes all
+ *    of that work on the exported file.
  *
  *  · **A checksum row at the end.** «ردیف آخر: جمع + checksum». It covers the
  *    data rows only, so re-exporting the same period yields the same digest

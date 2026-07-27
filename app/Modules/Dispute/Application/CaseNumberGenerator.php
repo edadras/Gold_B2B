@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Dispute\Application;
 
-use App\Modules\Dispute\Support\JalaliDate;
+use App\Modules\Shared\Support\JalaliDate;
 use Illuminate\Support\Facades\DB;
 
 /**

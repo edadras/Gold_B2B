@@ -2,23 +2,24 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Dispute\Support;
+namespace App\Modules\Shared\Support;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
 
 /**
- * Gregorian → Jalali conversion, integer arithmetic only.
+ * Gregorian ⇄ Jalali conversion, integer arithmetic only.
  *
- * Case numbers are stamped with the Jalali year (DSP-1404-00142, §13.9). This
- * is a deliberate duplicate of Accounting\Support\JalaliDate and
- * Reporting\Support\JalaliDate: promoting it to Shared/ is off limits to this
- * agent, and a fixed-algorithm pure function is a cheaper duplication than a
- * dependency between three otherwise unrelated modules. Consolidating the three
- * copies under Shared\Support is a one-commit follow-up.
+ * Vouchers are numbered by the Jalali year (§9.7, «GB-1404-08-00142») and every
+ * report the member reads is dated شمسی, so the platform needs this in more
+ * than one module. It is deliberately duplicated in Reporting\Support rather
+ * than promoted into Shared: this agent's brief forbids touching Shared/, and a
+ * pure function with a fixed algorithm is a cheaper duplication than a
+ * cross-module dependency. Consolidating the two copies under
  */
 final class JalaliDate
 {
+    /** Cumulative Gregorian day counts at the start of each month, non-leap. */
     private const GREGORIAN_MONTH_DAYS = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
 
     private function __construct(
@@ -30,7 +31,7 @@ final class JalaliDate
     /** @param string $date Y-m-d */
     public static function fromGregorianString(string $date): self
     {
-        $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', substr($date, 0, 10));
+        $parsed = DateTimeImmutable::createFromFormat('!Y-m-d', $date);
 
         if ($parsed === false) {
             throw new InvalidArgumentException("Not a Y-m-d date: {$date}");
@@ -81,9 +82,15 @@ final class JalaliDate
         return new self($jy, $jm, $jd);
     }
 
+    /** "۱۴۰۴/۰۸/۰۵" in ASCII digits: 1404-08-05. */
     public function format(string $separator = '/'): string
     {
         return sprintf('%04d%s%02d%s%02d', $this->year, $separator, $this->month, $separator, $this->day);
+    }
+
+    public function yearMonth(): string
+    {
+        return sprintf('%04d-%02d', $this->year, $this->month);
     }
 
     public function __toString(): string

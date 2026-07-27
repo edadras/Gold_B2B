@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Accounting\Application;
 
-use App\Modules\Accounting\Support\JalaliDate;
+use App\Modules\Shared\Support\JalaliDate;
 use Illuminate\Support\Facades\DB;
 
 /**
