@@ -24,6 +24,7 @@ use App\Modules\Trading\Infrastructure\Readers\EloquentTradingExposureReader;
 use App\Modules\Trading\Listeners\CancelOrdersOnOrganizationRestriction;
 use App\Modules\Trading\Listeners\PauseMarketOnCircuitBreaker;
 use App\Modules\Trading\Listeners\PauseMarketOnMissingPrice;
+use App\Modules\Trading\Listeners\PublishOrderBookChange;
 
 /**
  * Wires the Trading module.
@@ -78,6 +79,20 @@ final class TradingServiceProvider extends ModuleServiceProvider
             NoPriceAvailable::class => [PauseMarketOnMissingPrice::class],
         ];
 
+        // Every event that can change the visible ladder is folded into one
+        // OrderBookChanged. OrderBookChanged itself is not in this list, so
+        // there is no cycle.
+        foreach ([
+            Events\OrderPlaced::class,
+            Events\OrderCancelled::class,
+            Events\OrderExpired::class,
+            Events\OrderFilled::class,
+            Events\OrderPartiallyFilled::class,
+            Events\OpeningAuctionCompleted::class,
+        ] as $event) {
+            $listeners[$event] = [PublishOrderBookChange::class];
+        }
+
         // Identity's events are referenced by string and guarded, because
         // Identity is a separate module that a deployment slice may not
         // include. Listening for a class that does not exist is harmless in
@@ -104,5 +119,9 @@ final class TradingServiceProvider extends ModuleServiceProvider
         // Instruments barely change and every order placement reads one, so the
         // repository memoises them for the life of the request.
         $this->app->singleton(InstrumentRepository::class);
+
+        // Singleton so its "last published ladder" memory survives the several
+        // order events a single crossing placement fires.
+        $this->app->singleton(PublishOrderBookChange::class);
     }
 }

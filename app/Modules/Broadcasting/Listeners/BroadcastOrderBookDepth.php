@@ -10,19 +10,17 @@ use App\Modules\Broadcasting\Domain\EventShape;
 /**
  * The depth seam.
  *
- * `depth.updated` needs the ladder, and no Trading domain event carries one
- * today — OrderPlaced and friends report the order, not the book. Broadcasting
- * may not import Trading to go and read it (dependency graph), and Trading is
- * not this module's to change. So there are two ways in and this listener is
- * the passive one:
+ * `depth.updated` needs the ladder, and the order-level events do not carry one
+ * — OrderPlaced and friends report the order, not the book. Broadcasting may
+ * not import Trading to go and read it (dependency graph). So there are two
+ * ways in and this listener is the passive one:
  *
  *   · MarketBroadcaster::depth() — a plain public method, for the matching
  *     engine or a book-publisher command that already holds the ladder;
- *   · this listener, registered against
- *     `App\Modules\Trading\Events\OrderBookChanged`, which does not exist yet.
- *     If Trading ever emits a book-change event carrying `bids`/`asks`, depth
- *     starts flowing with no change here — and until then this costs one
- *     never-fired listener registration.
+ *   · this listener, registered by name against
+ *     `App\Modules\Trading\Events\OrderBookChanged`. Trading folds every
+ *     ladder-changing order event into that one event and publishes the
+ *     aggregated depth on it; this is the production path.
  *
  * The throttle (10/sec, 100ms aggregation) lives in MarketBroadcaster, so both
  * routes are rate-limited identically.
