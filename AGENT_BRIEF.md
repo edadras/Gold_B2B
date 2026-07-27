@@ -66,6 +66,18 @@ your task so modules migrate in dependency order.
 - Run migrations with `php artisan migrate`
 - Run tests with `vendor/bin/phpunit <path>`
 
+**Use a private test database.** Every suite calls `migrate:fresh`, so
+concurrent runs drop each other's tables and produce confusing
+"table doesn't exist" errors. Databases `goldb2b_test_a` .. `goldb2b_test_f`
+exist for this:
+
+```
+DB_DATABASE=goldb2b_test_c vendor/bin/phpunit app/Modules/<Yours>/Tests
+```
+
+Pick one and stick to it. Never run a bare `php artisan migrate:fresh` against
+`goldb2b` while other agents are working — use your private database.
+
 MariaDB note: `CHECK` constraints and `SELECT ... FOR UPDATE SKIP LOCKED` work.
 Native table PARTITIONING is supported but skip it locally — write the schema
 without `PARTITION BY` and leave a comment pointing at ADR-012.

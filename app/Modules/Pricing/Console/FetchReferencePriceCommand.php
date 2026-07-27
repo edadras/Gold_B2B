@@ -8,6 +8,7 @@ use App\Modules\Pricing\Application\PriceIngestionService;
 use App\Modules\Pricing\Application\ReferencePriceService;
 use App\Modules\Pricing\Infrastructure\Drivers\PriceDriverRegistry;
 use App\Modules\Pricing\Infrastructure\Models\PriceSource;
+use App\Modules\Shared\ValueObjects\PricePerFineGram;
 use Illuminate\Console\Command;
 
 /**
@@ -92,7 +93,9 @@ final class FetchReferencePriceCommand extends Command
         $this->info(sprintf(
             'Reference price for instrument %d: %s rial/g (accepted %d, rejected %d)',
             $instrumentId,
-            number_format((float) $reference->fine_gram_rial, 0, '.', ','),
+            // Grouped without number_format(): that would take a float, and rule 1
+            // of AGENT_BRIEF keeps floats out of every price path, display included.
+            PricePerFineGram::fromRial($reference->fine_gram_rial)->formatted(),
             $accepted,
             $rejected,
         ));

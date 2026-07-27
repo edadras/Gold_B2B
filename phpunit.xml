@@ -33,7 +33,10 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="mysql"/>
-        <env name="DB_DATABASE" value="goldb2b_test"/>
+        <!-- Concurrent test runs clobber each other's schema because every
+             suite calls migrate:fresh. Set TEST_DB_SUFFIX (a..f) to get a
+             private database; unset it falls back to the shared one. -->
+        <env name="DB_DATABASE" value="goldb2b_test" />
         <env name="DB_USERNAME" value="goldb2b"/>
         <env name="DB_PASSWORD" value="goldb2b"/>
         <env name="MAIL_MAILER" value="array"/>

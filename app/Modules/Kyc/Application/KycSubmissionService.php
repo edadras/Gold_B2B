@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Kyc\Application;
 
-use App\Modules\Identity\Application\OrganizationStateMachine;
+use App\Modules\Identity\Contracts\OrganizationLifecycle;
 use App\Modules\Identity\Domain\OrganizationStatus;
 use App\Modules\Identity\Domain\OrganizationType;
 use App\Modules\Identity\Infrastructure\Models\Organization;
@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Event;
 final class KycSubmissionService
 {
     public function __construct(
-        private readonly OrganizationStateMachine $organizationState,
+        private readonly OrganizationLifecycle $organizations,
     ) {}
 
     public function profileFor(Organization $organization): KycProfile
@@ -146,8 +146,8 @@ final class KycSubmissionService
         // The organisation follows the dossier into the review queue. Its own
         // state machine validates the move and writes its own event row.
         if ($organization->status->canTransitionTo(OrganizationStatus::UNDER_REVIEW)) {
-            $this->organizationState->transition(
-                organization: $organization,
+            $this->organizations->transition(
+                organizationId: (int) $organization->id,
                 target: OrganizationStatus::UNDER_REVIEW,
                 actorUserId: $submittedByUserId,
                 reason: 'ارسال کامل مدارک KYC',

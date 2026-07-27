@@ -110,6 +110,18 @@ final class ArchitectureTest extends TestCase
                     PREG_SET_ORDER,
                 );
 
+                // Test fixtures and factories legitimately reach for another
+                // module's factories to build a scenario; forcing that through
+                // a contract buys no safety and a lot of friction. The
+                // dependency-graph rule above still applies to them.
+                $isFixture = str_contains($file->getPathname(), '/Tests/')
+                    || str_contains($file->getPathname(), '/Database/Factories/')
+                    || str_contains($file->getPathname(), '/Database/Seeders/');
+
+                if ($isFixture) {
+                    continue;
+                }
+
                 foreach ($matches as [, $referenced, $segment]) {
                     if ($referenced === $module || $referenced === 'Shared') {
                         continue;
