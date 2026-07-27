@@ -7,6 +7,7 @@ namespace App\Modules\Web\Tests\Feature;
 use App\Modules\Identity\Domain\OrganizationStatus;
 use App\Modules\Identity\Infrastructure\Models\Organization;
 use App\Modules\Identity\Infrastructure\Models\User;
+use App\Modules\Web\Domain\PanelScreen;
 use App\Modules\Web\Tests\WebTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Group;
@@ -35,10 +36,48 @@ final class PanelAccessTest extends WebTestCase
             ['/app/settlements'],
             ['/app/orders'],
             ['/app/trades'],
+            ['/app/otc'],
+            ['/app/rfq'],
             ['/app/lots'],
             ['/app/counterparties'],
+            ['/app/disputes'],
             ['/app/reports'],
+            ['/app/kyc'],
+            ['/app/team'],
+            ['/app/settings'],
         ];
+    }
+
+    /**
+     * The list above and PanelScreen must not drift: a screen the enum knows
+     * about but the router does not serve is a 404 on refresh, and one this
+     * test does not name is a screen nobody proves is behind the guard.
+     */
+    #[Test]
+    public function the_guarded_path_list_covers_every_screen(): void
+    {
+        $paths = array_map(static fn (array $row): string => $row[0], self::panelPaths());
+
+        foreach (PanelScreen::cases() as $screen) {
+            self::assertContains('/app/'.$screen->path(), $paths, $screen->value.' is not covered');
+        }
+
+        // `/app` itself is the extra entry; everything else is one per screen.
+        self::assertCount(count(PanelScreen::cases()) + 1, $paths);
+    }
+
+    #[Test]
+    public function each_new_screen_renders_its_own_shell(): void
+    {
+        $user = $this->member();
+
+        foreach (PanelScreen::cases() as $screen) {
+            $this->actingAs($user)
+                ->get('/app/'.$screen->path())
+                ->assertOk()
+                ->assertSee('data-screen="'.$screen->value.'"', false)
+                ->assertSee($screen->title(), false);
+        }
     }
 
     #[Test]

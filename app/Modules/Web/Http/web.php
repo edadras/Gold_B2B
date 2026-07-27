@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Web\Http\Controllers\PanelController;
 use App\Modules\Web\Http\Controllers\PanelSessionController;
 use App\Modules\Web\Http\Middleware\AuthenticatePanel;
+use App\Modules\Web\Domain\PanelScreen;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -39,6 +40,6 @@ Route::middleware(AuthenticatePanel::class)->group(function (): void {
     // falls through to a 404 rather than rendering the default screen under a
     // URL that does not exist.
     Route::get('{screen}', [PanelController::class, 'show'])
-        ->where('screen', 'terminal|ledger|settlements|orders|trades|lots|counterparties|reports')
+        ->where('screen', PanelScreen::routePattern())
         ->name('web.panel.screen');
 });

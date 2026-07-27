@@ -119,7 +119,12 @@ export class ApiClient {
             headers.Authorization = `Bearer ${this.token}`;
         }
 
-        if (body !== null) {
+        // FormData sets its own Content-Type, including the multipart boundary
+        // the parser needs. Naming a type here would overwrite it with one that
+        // has no boundary, and the server would see an empty request body.
+        const multipart = typeof FormData !== 'undefined' && body instanceof FormData;
+
+        if (body !== null && ! multipart) {
             headers['Content-Type'] = 'application/json';
         }
 
@@ -138,7 +143,7 @@ export class ApiClient {
                 method,
                 headers,
                 credentials: 'same-origin',
-                body: body === null ? undefined : JSON.stringify(body),
+                body: body === null ? undefined : (multipart ? body : JSON.stringify(body)),
                 signal,
             });
         } catch (cause) {
@@ -196,6 +201,22 @@ export class ApiClient {
 
     delete(path, options = {}) {
         return this.request('DELETE', path, options);
+    }
+
+    /**
+     * A multipart POST — the KYC document upload, which is the one endpoint in
+     * the panel that sends bytes rather than JSON.
+     *
+     * Kept as a named method so no component builds a `fetch` of its own to get
+     * a file across: the bearer token, the error envelope and the 401 handler
+     * all live in `request()`, and a second transport would have to reimplement
+     * every one of them.
+     *
+     * @param {string} path
+     * @param {FormData} form
+     */
+    upload(path, form, options = {}) {
+        return this.request('POST', path, { body: form, ...options });
     }
 
     /**

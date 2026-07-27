@@ -12,6 +12,7 @@ use App\Modules\Identity\Infrastructure\Models\Organization;
 use App\Modules\Identity\Infrastructure\Models\Role;
 use App\Modules\Identity\Infrastructure\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
@@ -128,6 +129,6 @@ abstract class ApiTestCase extends TestCase
 
     protected function uuid(): string
     {
-        return (string) \Illuminate\Support\Str::uuid();
+        return (string) Str::uuid();
     }
 }

@@ -15,6 +15,12 @@
         <testsuite name="Architecture">
             <directory>tests/Architecture</directory>
         </testsuite>
+        <!-- Cross-module journeys. Every module suite builds its own world,
+             which is why none of them can catch a broken seam between two
+             modules; these run the real providers against each other. -->
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
         <testsuite name="Modules">
             <directory>app/Modules/*/Tests</directory>
         </testsuite>

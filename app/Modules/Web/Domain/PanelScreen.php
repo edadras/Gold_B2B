@@ -27,9 +27,15 @@ enum PanelScreen: string
     case SETTLEMENTS = 'settlements';
     case ORDERS = 'orders';
     case TRADES = 'trades';
+    case OTC = 'otc';
+    case RFQ = 'rfq';
     case LOTS = 'lots';
     case COUNTERPARTIES = 'counterparties';
+    case DISPUTES = 'disputes';
     case REPORTS = 'reports';
+    case KYC = 'kyc';
+    case TEAM = 'team';
+    case SETTINGS = 'settings';
 
     /** URL path under the panel prefix. */
     public function path(): string
@@ -46,9 +52,15 @@ enum PanelScreen: string
             self::SETTLEMENTS => 'صف تسویه',
             self::ORDERS => 'سفارش‌ها',
             self::TRADES => 'معاملات',
+            self::OTC => 'معاملات توافقی',
+            self::RFQ => 'درخواست قیمت',
             self::LOTS => 'شمش‌ها',
             self::COUNTERPARTIES => 'طرف‌حساب‌ها',
+            self::DISPUTES => 'اختلافات',
             self::REPORTS => 'گزارش‌ها',
+            self::KYC => 'احراز هویت',
+            self::TEAM => 'کاربران',
+            self::SETTINGS => 'تنظیمات',
         };
     }
 
@@ -56,6 +68,18 @@ enum PanelScreen: string
     public static function default(): self
     {
         return self::TERMINAL;
+    }
+
+    /**
+     * The alternation the `{screen}` route parameter is constrained to.
+     *
+     * Derived rather than written out, so adding a case here cannot leave a
+     * screen that the client router serves but the server 404s — which is what
+     * a refresh or a bookmark on that screen would hit.
+     */
+    public static function routePattern(): string
+    {
+        return implode('|', array_map(static fn (self $screen): string => $screen->value, self::cases()));
     }
 
     /** @return list<array{key: string, path: string, title: string}> */

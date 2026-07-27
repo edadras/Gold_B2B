@@ -11,6 +11,7 @@ use App\Modules\Shared\ValueObjects\FineWeight;
 use App\Modules\Shared\ValueObjects\NumericInput;
 use App\Modules\Shared\ValueObjects\PricePerFineGram;
 use App\Modules\Shared\ValueObjects\Purity;
+use App\Modules\Shared\ValueObjects\Rial;
 use App\Modules\Shared\ValueObjects\Weight;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Group;
@@ -83,7 +84,7 @@ final class CalculationTest extends TestCase
     #[DataProvider('feeVectors')]
     public function f8_fee_rounds_up(int $gross, int $rate, int $expected): void
     {
-        $fee = FeeTerms::rate($rate)->applyTo(\App\Modules\Shared\ValueObjects\Rial::fromRial($gross));
+        $fee = FeeTerms::rate($rate)->applyTo(Rial::fromRial($gross));
 
         self::assertSame($expected, $fee->amount);
     }
@@ -91,7 +92,7 @@ final class CalculationTest extends TestCase
     #[Test]
     public function worked_example_one_reproduces_the_documented_numbers(): void
     {
-        $calc = new TradeValueCalculator();
+        $calc = new TradeValueCalculator;
 
         $valuation = $calc->valueOfGross(
             Weight::fromMilligrams(250_000),
@@ -113,7 +114,7 @@ final class CalculationTest extends TestCase
     #[Test]
     public function f9_amounts_always_balance_across_random_inputs(): void
     {
-        $calc = new TradeValueCalculator();
+        $calc = new TradeValueCalculator;
 
         for ($i = 0; $i < 2_000; $i++) {
             $valuation = $calc->value(
