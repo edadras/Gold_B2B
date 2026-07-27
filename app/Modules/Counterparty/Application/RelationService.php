@@ -77,6 +77,11 @@ final class RelationService implements CounterpartyRelations
     ): void {
         $tradeIncrement = $kind->countsAsTrade() ? 1 : 0;
         $volume = $kind->countsAsTrade() ? abs($goldDeltaMg) : 0;
+        // A manual adjustment must not pretend a trade happened, so it carries
+        // no trade timestamp; the COALESCE/LEAST dance below keeps the stored
+        // value in that case.
+        $tradeAt = $kind->countsAsTrade() ? $at->toDateTimeString() : null;
+        $now = Carbon::now()->toDateTimeString();
 
         DB::statement(
             'INSERT INTO counterparty_relations
@@ -88,8 +93,8 @@ final class RelationService implements CounterpartyRelations
                 rial_balance      = rial_balance + VALUES(rial_balance),
                 total_trade_count = total_trade_count + VALUES(total_trade_count),
                 total_volume_mg   = total_volume_mg + VALUES(total_volume_mg),
-                first_trade_at    = LEAST(COALESCE(first_trade_at, VALUES(first_trade_at)), VALUES(first_trade_at)),
-                last_trade_at     = GREATEST(COALESCE(last_trade_at, VALUES(last_trade_at)), VALUES(last_trade_at)),
+                first_trade_at    = COALESCE(LEAST(first_trade_at, VALUES(first_trade_at)), first_trade_at, VALUES(first_trade_at)),
+                last_trade_at     = COALESCE(GREATEST(last_trade_at, VALUES(last_trade_at)), last_trade_at, VALUES(last_trade_at)),
                 updated_at        = ?',
             [
                 $organizationId,
@@ -98,10 +103,10 @@ final class RelationService implements CounterpartyRelations
                 $rialDelta,
                 $tradeIncrement,
                 $volume,
-                $at->toDateTimeString(),
-                $at->toDateTimeString(),
-                Carbon::now()->toDateTimeString(),
-                Carbon::now()->toDateTimeString(),
+                $tradeAt,
+                $tradeAt,
+                $now,
+                $now,
             ],
         );
     }

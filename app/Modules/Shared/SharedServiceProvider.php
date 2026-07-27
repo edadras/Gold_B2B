@@ -7,6 +7,7 @@ namespace App\Modules\Shared;
 use App\Modules\Shared\Audit\AuditRecorder;
 use App\Modules\Shared\Calculation\TradeValueCalculator;
 use App\Modules\Shared\Concerns\ModuleServiceProvider;
+use App\Modules\Shared\Http\RateLimiters;
 use App\Modules\Shared\Support\SettingsRepository;
 
 final class SharedServiceProvider extends ModuleServiceProvider
@@ -23,5 +24,12 @@ final class SharedServiceProvider extends ModuleServiceProvider
         $this->app->singleton(TradeValueCalculator::class);
         $this->app->singleton(AuditRecorder::class);
         $this->app->singleton(SettingsRepository::class);
+    }
+
+    public function boot(): void
+    {
+        parent::boot();
+
+        RateLimiters::register();
     }
 }

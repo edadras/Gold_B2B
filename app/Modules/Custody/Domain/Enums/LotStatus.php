@@ -27,7 +27,7 @@ enum LotStatus: string
     {
         return match ($this) {
             self::UNDER_ASSAY => [
-                self::AVAILABLE, self::ON_HOLD, self::CONSUMED,
+                self::AVAILABLE,
             ],
             self::AVAILABLE => [
                 self::RESERVED, self::ON_HOLD, self::IN_TRANSIT,
