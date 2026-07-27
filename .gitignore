@@ -1,45 +1,56 @@
-# Dependencies
+# PHP / Laravel
 /vendor
 /node_modules
-
-# Environment
-.env
-.env.*
-!.env.example
-
-# Build output
 /public/build
 /public/hot
 /public/storage
 /storage/*.key
-/storage/framework/cache/*
+/storage/pail
+/storage/framework/cache/data/*
 /storage/framework/sessions/*
+/storage/framework/testing/*
 /storage/framework/views/*
 /storage/logs/*
+!/storage/**/.gitignore
+.phpunit.result.cache
+.phpunit.cache
+/.php-cs-fixer.cache
+/coverage
+/build
+
+# Environment — never commit real credentials
+.env
+.env.*
+!.env.example
 
 # Flutter
 /mobile/.dart_tool/
 /mobile/build/
 /mobile/.flutter-plugins
 /mobile/.flutter-plugins-dependencies
+/mobile/.packages
 /mobile/ios/Pods/
+/mobile/ios/Flutter/Flutter.framework
+/mobile/ios/Flutter/Generated.xcconfig
 /mobile/android/.gradle/
+/mobile/android/local.properties
+/mobile/pubspec.lock
 *.g.dart
 *.freezed.dart
 
-# IDE
+# IDE / OS
 .idea/
 .vscode/
+.fleet/
 *.swp
 *.swo
 .DS_Store
-
-# Testing
-/coverage
-.phpunit.result.cache
+Thumbs.db
 
 # Secrets — never commit
 *.pem
 *.key
 *.p12
+*.jks
 secrets/
+auth.json
