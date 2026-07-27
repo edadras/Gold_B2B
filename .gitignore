@@ -54,3 +54,6 @@ Thumbs.db
 *.jks
 secrets/
 auth.json
+
+# Redis snapshot left behind by a local redis-server
+dump.rdb

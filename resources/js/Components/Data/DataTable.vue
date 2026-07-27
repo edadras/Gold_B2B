@@ -169,6 +169,7 @@ import NumCell from './NumCell.vue';
 import StatusBadge from './StatusBadge.vue';
 import WeightCell from './WeightCell.vue';
 import StaleBadge from '../Common/StaleBadge.vue';
+import { uuid } from '../../lib/api.js';
 import { notify, useApi } from '../../Stores/panel.js';
 
 const props = defineProps({
@@ -335,7 +336,7 @@ async function requestExport() {
             report: props.exportPath,
             format: 'XLSX',
             filters: { ...filterValues.value },
-        }, { idempotencyKey: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) });
+        }, { idempotencyKey: uuid() });
         notify('درخواست خروجی ثبت شد؛ پس از آماده شدن اطلاع داده می‌شود.', 'info');
     } catch (error) {
         notify(error.message || 'ثبت درخواست خروجی ناموفق بود', 'error');

@@ -3,7 +3,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test": "node --test \"resources/js/lib/__tests__/*.test.js\""
     },
     "devDependencies": {
         "autoprefixer": "^10.4.20",
@@ -16,7 +17,6 @@
         "@vitejs/plugin-vue": "^5.2.1"
     },
     "dependencies": {
-        "vue": "^3.5.13",
-        "@inertiajs/vue3": "^2.0.0"
+        "vue": "^3.5.13"
     }
 }

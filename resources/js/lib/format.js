@@ -74,7 +74,7 @@ export function rialCompact(amount, { persian = false } = {}) {
 
     let text;
     if (abs >= 1_000_000_000_000n) {
-        text = scale(1_000_000_000_000n, 'همت');
+        text = scale(1_000_000_000_000n, 'هزار میلیارد');
     } else if (abs >= 1_000_000_000n) {
         text = scale(1_000_000_000n, 'میلیارد');
     } else if (abs >= 1_000_000n) {

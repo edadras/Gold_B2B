@@ -146,6 +146,11 @@ const props = defineProps({
     instrument: { type: Object, default: null },
     /** Fee rate in hundred-thousandths, from /meta/settings. */
     feeRateX100k: { type: [Number, String], default: 150 },
+    /**
+     * Where ↑/↓ start from when the price field is empty. Pressing ↑ on a blank
+     * ticket should step off the market, not off zero.
+     */
+    referencePriceRial: { type: [Number, String, null], default: null },
 });
 
 const emit = defineEmits(['placed']);
@@ -280,8 +285,17 @@ function stepPrice(ticks) {
     form.value.priceRial = base.stepBy(tickSize.value, BigInt(ticks)).rial;
 }
 
+/**
+ * The market price rounded DOWN to a whole tick. Stepping from an off-tick
+ * reference would leave every subsequent step off-tick too, and the server
+ * would reject the order with ORDER_PRICE_INVALID_TICK.
+ */
 function referencePrice() {
-    return 0n;
+    if (props.referencePriceRial === null) {
+        return 0n;
+    }
+    const reference = BigInt(props.referencePriceRial);
+    return reference - (reference % tickSize.value);
 }
 
 /** Depth-ladder click: side, price and optionally the whole level's size. */

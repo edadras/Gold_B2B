@@ -53,6 +53,7 @@
                 ref="orderForm"
                 :instrument="instrument"
                 :fee-rate-x100k="feeRate"
+                :reference-price-rial="referencePrice"
                 @placed="onPlaced"
             />
 
@@ -111,6 +112,7 @@ import {
     market,
     refreshBalances,
     refreshOrders,
+    resyncAll,
     startTerminalFeeds,
     stopTerminalFeeds,
 } from '../../Stores/market.js';
@@ -128,6 +130,11 @@ const feeRate = ref(150);
 
 const staleAfter = computed(() => panel.realtime.stale_after_ms || 30000);
 const instrument = computed(() => market.instruments.find((i) => i.code === market.selected) || null);
+
+/** Where the ↑/↓ keys start from on an empty ticket: mid, else last traded. */
+const referencePrice = computed(() => market.depth.mid_price_rial
+    ?? (market.quote ? market.quote.last_price_rial : null)
+    ?? null);
 
 function select(code) {
     if (code === market.selected) {
@@ -240,7 +247,29 @@ onMounted(async () => {
     }
 });
 
-onBeforeUnmount(() => stopTerminalFeeds());
+/**
+ * Doc §1.6's post-reconnect re-sync. Coming back from a dropped connection or
+ * a backgrounded tab, every feed re-reads from REST rather than waiting for the
+ * next interval — otherwise the first thing the trader sees is a ladder that is
+ * up to two seconds stale with no indication, or thirty if the socket is what
+ * came back.
+ */
+function resyncOnReconnect() {
+    if (document.visibilityState === 'visible') {
+        void resyncAll();
+    }
+}
+
+onMounted(() => {
+    window.addEventListener('online', resyncOnReconnect);
+    document.addEventListener('visibilitychange', resyncOnReconnect);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('online', resyncOnReconnect);
+    document.removeEventListener('visibilitychange', resyncOnReconnect);
+    stopTerminalFeeds();
+});
 
 watch(() => market.selected, (code) => {
     if (code) {

@@ -82,9 +82,13 @@ export function useKeyboard(bindings) {
             return;
         }
 
-        // Rule 1: while typing, only Escape and modified chords get through.
+        // Rule 1: while typing, only Escape, Enter and modified chords get
+        // through. Enter is on that list because the ticket is a form — a
+        // trader finishes typing a price and presses Enter, and making them
+        // click out of the field first would be the single most irritating
+        // thing this panel could do.
         const modified = event.ctrlKey || event.metaKey;
-        if (typing && key !== 'Escape' && !modified) {
+        if (typing && key !== 'Escape' && key !== 'Enter' && !modified) {
             return;
         }
 
